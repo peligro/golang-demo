@@ -3,7 +3,8 @@ package app
 import (
 	"github.com/peligro/golang-demo/middleware"
 	"github.com/peligro/golang-demo/routes"
-	
+	"github.com/peligro/golang-demo/database"
+	"github.com/peligro/golang-demo/model"
 	"log"
 	"net/http"
 	"os"
@@ -29,8 +30,17 @@ func SetupRouter() *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Recovery())
 	// 👇 Ahora pasamos la DB a Migraciones
-	//db := database.GetDB()
-	//modelos.Migraciones(db)
+	db := database.GetDB()
+	if environment == "local" {
+    log.Println("🔄 Ejecutando migraciones automáticas (dev/staging)...")
+    if err := model.Migrations(db); err != nil {
+        log.Printf("⚠️  Warning en migraciones: %v", err)
+        // Opcional: panic si quieres que falle el inicio en dev
+        // panic(err)
+    }
+	} else {
+		log.Println("🔒 Producción: migraciones deben ejecutarse vía pipeline")
+	}
 
 	// 1️⃣ CORS primero (maneja OPTIONS)
 	router.Use(middleware.CORSMiddleware())
