@@ -1,0 +1,188 @@
+basePath: /
+definitions:
+  dto.HealthResponse:
+    properties:
+      status:
+        example: UP!!
+        type: string
+    type: object
+  dto.StateCreateRequest:
+    properties:
+      name:
+        example: Activo
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
+    type: object
+  dto.StateResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.StateUpdateRequest:
+    properties:
+      name:
+        example: Activo
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
+    type: object
+host: localhost:8082
+info:
+  contact: {}
+  description: API Backend para GOLANG DEMO.
+  title: Golang DEMO
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Retorna "UP!!" si el servicio está activo
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.HealthResponse'
+      summary: Verifica estado del servidor
+      tags:
+      - Health
+  /states:
+    get:
+      description: Retorna todos los estados registrados
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.StateResponse'
+            type: array
+      summary: Listar estados
+      tags:
+      - States
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo estado con el nombre proporcionado
+      parameters:
+      - description: Datos del estado
+        in: body
+        name: state
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StateCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.StateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo estado
+      tags:
+      - States
+  /states/{id}:
+    delete:
+      description: Elimina un estado por su ID (valida dependencias)
+      parameters:
+      - description: ID del estado
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar estado
+      tags:
+      - States
+    get:
+      description: Retorna un estado específico por su ID
+      parameters:
+      - description: ID del estado
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StateResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener estado por ID
+      tags:
+      - States
+    put:
+      consumes:
+      - application/json
+      description: Actualiza el nombre de un estado existente
+      parameters:
+      - description: ID del estado
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Nuevos datos
+        in: body
+        name: state
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StateUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StateResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar estado
+      tags:
+      - States
+schemes:
+- http
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
