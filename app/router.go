@@ -18,16 +18,44 @@ import (
 	// ← Imports actualizados con subpaquetes
 	"github.com/peligro/golang-demo/routes/health"
 	"github.com/peligro/golang-demo/routes/state"
+	"github.com/peligro/golang-demo/routes/module"
+	"github.com/peligro/golang-demo/routes/profile"
 
 	_ "github.com/peligro/golang-demo/docs"
 )
 
 func SetupRouter() *gin.Engine {
-	// ... (carga de env, modo Gin, DB, migraciones, middlewares) ...
+	// Cargar .env (útil si main.go no lo hizo, aunque ahora sí lo hace)
+	if err := godotenv.Load(); err != nil {
+		log.Println("⚠️  No se encontró .env, usando variables de entorno del sistema")
+	}
+
+	environment := os.Getenv("ENVIRONMENT")
+	if environment == "local" || environment == "staging" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	router := gin.New()
 	router.Use(gin.Recovery())
+	// 👇 Ahora pasamos la DB a Migraciones
+	db := database.GetDB()
+	if environment == "local" {
+    log.Println("🔄 Ejecutando migraciones automáticas (dev/staging)...")
+    if err := model.Migrations(db); err != nil {
+        log.Printf("⚠️  Warning en migraciones: %v", err)
+        // Opcional: panic si quieres que falle el inicio en dev
+        // panic(err)
+    }
+	} else {
+		log.Println("🔒 Producción: migraciones deben ejecutarse vía pipeline")
+	}
+
+	// 1️⃣ CORS primero (maneja OPTIONS)
 	router.Use(middleware.CORSMiddleware())
+	
+	// 2️⃣ Security headers después
 	router.Use(middleware.SecurityHeadersMiddleware())
 
 	// Rutas públicas
@@ -51,6 +79,12 @@ func SetupRouter() *gin.Engine {
 
 	// 🗂️ States CRUD (con DB)
 	state.RegisterRoutes(router, db)
+
+	// 🧩 Modules CRUD (con DB)
+	module.RegisterRoutes(router, db)
+
+	// 👥 Profiles CRUD (con DB)
+	profile.RegisterRoutes(router, db)
 
 	// Swagger docs
 	if environment == "local" || environment == "staging" {

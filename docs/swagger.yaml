@@ -6,14 +6,86 @@ definitions:
         example: UP!!
         type: string
     type: object
-  dto.StateCreateRequest:
+  dto.ModuleCreateRequest:
     properties:
+      description:
+        example: Gestión de usuarios del sistema
+        maxLength: 500
+        minLength: 10
+        type: string
       name:
-        example: Activo
+        example: Usuarios
         maxLength: 100
         minLength: 3
         type: string
     required:
+    - description
+    - name
+    type: object
+  dto.ModuleResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.ModuleUpdateRequest:
+    properties:
+      description:
+        example: Gestión de usuarios del sistema
+        maxLength: 500
+        minLength: 10
+        type: string
+      name:
+        example: Usuarios
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  dto.ProfileCreateRequest:
+    properties:
+      description:
+        example: Acceso completo a todos los módulos del sistema
+        maxLength: 500
+        minLength: 10
+        type: string
+      name:
+        example: Administrador
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  dto.ProfileResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.ProfileUpdateRequest:
+    properties:
+      description:
+        example: Acceso completo a todos los módulos del sistema
+        maxLength: 500
+        minLength: 10
+        type: string
+      name:
+        example: Administrador
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - description
     - name
     type: object
   dto.StateResponse:
@@ -22,16 +94,6 @@ definitions:
         type: integer
       name:
         type: string
-    type: object
-  dto.StateUpdateRequest:
-    properties:
-      name:
-        example: Activo
-        maxLength: 100
-        minLength: 3
-        type: string
-    required:
-    - name
     type: object
 host: localhost:8082
 info:
@@ -53,9 +115,259 @@ paths:
       summary: Verifica estado del servidor
       tags:
       - Health
+  /modules:
+    get:
+      description: Retorna todos los módulos registrados ordenados por ID descendente
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ModuleResponse'
+            type: array
+      summary: Listar módulos
+      tags:
+      - Modules
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo módulo con nombre y descripción
+      parameters:
+      - description: Datos del módulo
+        in: body
+        name: module
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ModuleCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ModuleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo módulo
+      tags:
+      - Modules
+  /modules/{id}:
+    delete:
+      description: Elimina un módulo por su ID (valida dependencias con profile_module)
+      parameters:
+      - description: ID del módulo
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar módulo
+      tags:
+      - Modules
+    get:
+      description: Retorna un módulo específico por su ID
+      parameters:
+      - description: ID del módulo
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ModuleResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener módulo por ID
+      tags:
+      - Modules
+    put:
+      consumes:
+      - application/json
+      description: Actualiza nombre y descripción de un módulo existente
+      parameters:
+      - description: ID del módulo
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Nuevos datos
+        in: body
+        name: module
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ModuleUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ModuleResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar módulo
+      tags:
+      - Modules
+  /profiles:
+    get:
+      description: Retorna todos los perfiles registrados ordenados por ID descendente
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ProfileResponse'
+            type: array
+      summary: Listar perfiles
+      tags:
+      - Profiles
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo perfil con nombre y descripción
+      parameters:
+      - description: Datos del perfil
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProfileCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo perfil
+      tags:
+      - Profiles
+  /profiles/{id}:
+    delete:
+      description: Elimina un perfil por su ID (valida dependencias con profile_module)
+      parameters:
+      - description: ID del perfil
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar perfil
+      tags:
+      - Profiles
+    get:
+      description: Retorna un perfil específico por su ID
+      parameters:
+      - description: ID del perfil
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProfileResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener perfil por ID
+      tags:
+      - Profiles
+    put:
+      consumes:
+      - application/json
+      description: Actualiza nombre y descripción de un perfil existente
+      parameters:
+      - description: ID del perfil
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Nuevos datos
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProfileUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ProfileResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar perfil
+      tags:
+      - Profiles
   /states:
     get:
-      description: Retorna todos los estados registrados
+      description: Retorna todos los estados registrados ordenados por ID descendente
       produces:
       - application/json
       responses:
@@ -66,116 +378,6 @@ paths:
               $ref: '#/definitions/dto.StateResponse'
             type: array
       summary: Listar estados
-      tags:
-      - States
-    post:
-      consumes:
-      - application/json
-      description: Crea un nuevo estado con el nombre proporcionado
-      parameters:
-      - description: Datos del estado
-        in: body
-        name: state
-        required: true
-        schema:
-          $ref: '#/definitions/dto.StateCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/dto.StateResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Crear nuevo estado
-      tags:
-      - States
-  /states/{id}:
-    delete:
-      description: Elimina un estado por su ID (valida dependencias)
-      parameters:
-      - description: ID del estado
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Eliminar estado
-      tags:
-      - States
-    get:
-      description: Retorna un estado específico por su ID
-      parameters:
-      - description: ID del estado
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.StateResponse'
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Obtener estado por ID
-      tags:
-      - States
-    put:
-      consumes:
-      - application/json
-      description: Actualiza el nombre de un estado existente
-      parameters:
-      - description: ID del estado
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Nuevos datos
-        in: body
-        name: state
-        required: true
-        schema:
-          $ref: '#/definitions/dto.StateUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/dto.StateResponse'
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Actualizar estado
       tags:
       - States
 schemes:
