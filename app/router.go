@@ -20,6 +20,8 @@ import (
 	"github.com/peligro/golang-demo/routes/state"
 	"github.com/peligro/golang-demo/routes/module"
 	"github.com/peligro/golang-demo/routes/profile"
+	"github.com/peligro/golang-demo/routes/item"
+	"github.com/peligro/golang-demo/routes/user"
 
 	_ "github.com/peligro/golang-demo/docs"
 )
@@ -86,9 +88,18 @@ func SetupRouter() *gin.Engine {
 	// 👥 Profiles CRUD (con DB)
 	profile.RegisterRoutes(router, db)
 
-	// Swagger docs
+	// 🧩 Items CRUD (con DB)
+	item.RegisterRoutes(router, db)
+
+	// 👤 Users CRUD (con DB + bcrypt)
+	user.RegisterRoutes(router, db)
+
 	if environment == "local" || environment == "staging" {
-		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+    // Redirigir /swagger a /swagger/index.html?dark=true
+    router.GET("/swagger", func(c *gin.Context) {
+        c.Redirect(http.StatusMovedPermanently, "/swagger/index.html?dark=true")
+    })
+    router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
 	return router

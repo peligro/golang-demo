@@ -12,6 +12,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	"github.com/peligro/golang-demo/common"
 	"github.com/peligro/golang-demo/dto"
 	"github.com/peligro/golang-demo/model"
 )
@@ -29,23 +30,95 @@ func TestHandler_Index(t *testing.T) {
 	// Seed
 	db.Create(&model.Profile{Name: "Administrador", Description: "Acceso completo al sistema"})
 	db.Create(&model.Profile{Name: "Editor", Description: "Puede editar contenido"})
+	db.Create(&model.Profile{Name: "Cliente", Description: "Acceso limitado"})
 
 	handler := NewHandler(db)
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/profiles", nil)
+	t.Run("Listado sin filtros (paginación por defecto)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/profiles", nil)
 
-	handler.Index(c)
+		handler.Index(c)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, http.StatusOK, w.Code)
 
-	var response dto.ProfilesResponse
-	err = json.Unmarshal(w.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.Len(t, response, 2)
-	assert.Equal(t, uint(2), response[0].ID) // id desc
-	assert.Equal(t, "Editor", response[0].Name)
+		var response common.PaginatedResponse[dto.ProfileResponse]
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		
+		// Validar estructura compatible con React
+		assert.Len(t, response.Data, 3)
+		assert.Equal(t, 3, response.Pagination.Total)
+		assert.Equal(t, 1, response.Pagination.CurrentPage)
+		assert.Equal(t, 20, response.Pagination.PerPage)
+		assert.Equal(t, 1, response.Pagination.LastPage) // ceil(3/20) = 1
+	})
+
+	t.Run("Búsqueda por nombre con field=name", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/profiles?search=Admin&field=name", nil)
+
+		handler.Index(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response common.PaginatedResponse[dto.ProfileResponse]
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Len(t, response.Data, 1)
+		assert.Equal(t, "Administrador", response.Data[0].Name)
+	})
+
+	t.Run("Paginación: page=1, per_page=2", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/profiles?page=1&per_page=2", nil)
+
+		handler.Index(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response common.PaginatedResponse[dto.ProfileResponse]
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Len(t, response.Data, 2)
+		assert.Equal(t, 3, response.Pagination.Total)
+		assert.Equal(t, 2, response.Pagination.LastPage) // ceil(3/2) = 2
+		assert.Equal(t, 1, response.Pagination.CurrentPage)
+	})
+
+	t.Run("Ordenamiento por nombre ASC", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/profiles?sort_by=name&sort_dir=asc", nil)
+
+		handler.Index(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response common.PaginatedResponse[dto.ProfileResponse]
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		// "Administrador" debería ser primero alfabéticamente
+		assert.Equal(t, "Administrador", response.Data[0].Name)
+	})
+
+	t.Run("Búsqueda con campo no permitido (debería ignorar search)", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/profiles?search=Admin&field=description_invalid", nil)
+
+		handler.Index(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		// Debería retornar todos los registros porque el campo no está en whitelist
+		var response common.PaginatedResponse[dto.ProfileResponse]
+		err = json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, response.Pagination.Total)
+	})
 }
 
 // =============================================================================
@@ -240,7 +313,6 @@ func TestHandler_Delete(t *testing.T) {
 
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
-	// Migrar también ProfileModule para validar dependencias
 	db.AutoMigrate(&model.Profile{}, &model.ProfileModule{})
 	db.Create(&model.Profile{ID: 20, Name: "ParaBorrar", Description: "Desc"})
 
@@ -274,9 +346,8 @@ func TestHandler_Delete(t *testing.T) {
 	})
 
 	t.Run("Con dependencias (simulado)", func(t *testing.T) {
-		// Seed: perfil + profile_module que lo referencia
 		db.Create(&model.Profile{ID: 30, Name: "ConDependencia", Description: "Desc"})
-		db.Create(&model.ProfileModule{ProfileID: 30}) // ← Dependencia simulada
+		db.Create(&model.ProfileModule{ProfileID: 30})
 
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)

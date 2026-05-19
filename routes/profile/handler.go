@@ -22,15 +22,47 @@ func NewHandler(db *gorm.DB) *Handler {
 }
 
 // Index godoc
-// @Summary Listar perfiles
-// @Description Retorna todos los perfiles registrados ordenados por ID descendente
+// @Summary Listar perfiles con paginación y búsqueda
+// @Description Retorna perfiles paginados, con búsqueda por nombre y ordenamiento
 // @Tags Profiles
 // @Produce json
-// @Success 200 {array} dto.ProfileResponse
+// @Param page query int false "Página" default(1)
+// @Param per_page query int false "Registros por página" default(20)
+// @Param search query string false "Término de búsqueda"
+// @Param field query string false "Campo a buscar" default(name) Enums(name)
+// @Param sort_by query string false "Campo para ordenar" Enums(id,name,created_at)
+// @Param sort_dir query string false "Dirección" Enums(asc,desc)
+// @Success 200 {object} common.PaginatedResponse[dto.ProfileResponse]
 // @Router /profiles [get]
 func (h *Handler) Index(c *gin.Context) {
+	// Parsear parámetros con valores por defecto
+	params := common.DefaultPagination()
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Parámetros de consulta inválidos",
+		})
+		return
+	}
+
+	// Whitelist de campos permitidos
+	searchableFields := []string{"name"}
+	allowedSortFields := []string{"id", "name", "created_at"}
+
+	// Construir query base
+	query := h.db.Model(&model.Profile{})
+
+	// Aplicar búsqueda y ordenamiento
+	query = params.Apply(query, searchableFields, allowedSortFields)
+
+	// Obtener total para metadatos de paginación
+	var total int64
+	h.db.Model(&model.Profile{}).Count(&total)
+
+	// Aplicar paginación y ejecutar
+	offset := (params.Page - 1) * params.PerPage
 	var profiles []model.Profile
-	if err := h.db.Order("id desc").Find(&profiles).Error; err != nil {
+	if err := query.Offset(offset).Limit(params.PerPage).Find(&profiles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "Error al consultar perfiles",
@@ -38,7 +70,8 @@ func (h *Handler) Index(c *gin.Context) {
 		return
 	}
 
-	response := make(dto.ProfilesResponse, len(profiles))
+	// Mapear a DTOs
+	response := make([]dto.ProfileResponse, len(profiles))
 	for i, p := range profiles {
 		response[i] = dto.ProfileResponse{
 			ID:          p.ID,
@@ -46,7 +79,9 @@ func (h *Handler) Index(c *gin.Context) {
 			Description: p.Description,
 		}
 	}
-	c.JSON(http.StatusOK, response)
+
+	// Retornar respuesta compatible con React PaginationInfo
+	c.JSON(http.StatusOK, common.NewPaginatedResponse(response, int(total), params.Page, params.PerPage))
 }
 
 // Show godoc

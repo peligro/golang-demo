@@ -35,30 +35,270 @@ const docTemplate = `{
                 }
             }
         },
-        "/modules": {
+        "/items": {
             "get": {
-                "description": "Retorna todos los módulos registrados ordenados por ID descendente",
+                "description": "Retorna todos los items registrados ordenados por ID descendente",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Modules"
+                    "Items"
                 ],
-                "summary": "Listar módulos",
+                "summary": "Listar items",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/dto.ModuleResponse"
+                                "$ref": "#/definitions/dto.ItemResponse"
                             }
                         }
                     }
                 }
             },
             "post": {
-                "description": "Crea un nuevo módulo con nombre y descripción",
+                "description": "Crea un nuevo item (acción) con nombre único",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Items"
+                ],
+                "summary": "Crear nuevo item",
+                "parameters": [
+                    {
+                        "description": "Datos del item",
+                        "name": "item",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ItemCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ItemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/items/{id}": {
+            "get": {
+                "description": "Retorna un item específico por su ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Items"
+                ],
+                "summary": "Obtener item por ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del item",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ItemResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Actualiza el nombre de un item existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Items"
+                ],
+                "summary": "Actualizar item",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del item",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Nuevo nombre",
+                        "name": "item",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ItemUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ItemResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Elimina un item por su ID (valida dependencias con profile_module_item)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Items"
+                ],
+                "summary": "Eliminar item",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del item",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/modules": {
+            "get": {
+                "description": "Retorna módulos paginados, con búsqueda por nombre y ordenamiento",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules"
+                ],
+                "summary": "Listar módulos con paginación y búsqueda",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Registros por página",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Término de búsqueda",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name"
+                        ],
+                        "type": "string",
+                        "default": "name",
+                        "description": "Campo a buscar",
+                        "name": "field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "id",
+                            "name",
+                            "slug",
+                            "created_at"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Dirección",
+                        "name": "sort_dir",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.PaginatedResponse-dto_ModuleResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Crea un nuevo módulo con nombre y path (slug)",
                 "consumes": [
                     "application/json"
                 ],
@@ -137,7 +377,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Actualiza nombre y descripción de un módulo existente",
+                "description": "Actualiza nombre y path de un módulo existente",
                 "consumes": [
                     "application/json"
                 ],
@@ -226,22 +466,72 @@ const docTemplate = `{
         },
         "/profiles": {
             "get": {
-                "description": "Retorna todos los perfiles registrados ordenados por ID descendente",
+                "description": "Retorna perfiles paginados, con búsqueda por nombre y ordenamiento",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Profiles"
                 ],
-                "summary": "Listar perfiles",
+                "summary": "Listar perfiles con paginación y búsqueda",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Registros por página",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Término de búsqueda",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name"
+                        ],
+                        "type": "string",
+                        "default": "name",
+                        "description": "Campo a buscar",
+                        "name": "field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "id",
+                            "name",
+                            "created_at"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Dirección",
+                        "name": "sort_dir",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/dto.ProfileResponse"
-                            }
+                            "$ref": "#/definitions/common.PaginatedResponse-dto_ProfileResponse"
                         }
                     }
                 }
@@ -435,9 +725,461 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users": {
+            "get": {
+                "description": "Retorna usuarios paginados con búsqueda por nombre/email, filtros por estado y perfil, y ordenamiento flexible",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Listar usuarios con paginación y filtros avanzados",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Registros por página",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Término de búsqueda",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "name",
+                            "email"
+                        ],
+                        "type": "string",
+                        "default": "name",
+                        "description": "Campo a buscar",
+                        "name": "field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            0,
+                            1
+                        ],
+                        "type": "integer",
+                        "description": "Filtrar por estado",
+                        "name": "state",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtrar por perfil",
+                        "name": "profile_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "id",
+                            "name",
+                            "email",
+                            "created_at"
+                        ],
+                        "type": "string",
+                        "default": "id",
+                        "description": "Campo para ordenar",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Dirección de ordenamiento",
+                        "name": "sort_dir",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.PaginatedResponse-dto_UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Crea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Crear nuevo usuario",
+                "parameters": [
+                    {
+                        "description": "Datos del usuario",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me": {
+            "get": {
+                "description": "Retorna los datos del usuario autenticado (requiere middleware de auth)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Obtener usuario autenticado",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "description": "Retorna un usuario específico con su metadata y perfil asociado",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Obtener usuario por ID",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "ID del usuario",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Actualiza datos del usuario, metadata y password (opcional) con validaciones robustas",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Actualizar usuario",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "ID del usuario",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Nuevos datos del usuario",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Elimina un usuario y su metadata asociada de forma segura",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Eliminar usuario",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "ID del usuario",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "common.PaginatedResponse-dto_ModuleResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ModuleResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/common.PaginationInfo"
+                }
+            }
+        },
+        "common.PaginatedResponse-dto_ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ProfileResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/common.PaginationInfo"
+                }
+            }
+        },
+        "common.PaginatedResponse-dto_UserResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/common.PaginationInfo"
+                }
+            }
+        },
+        "common.PaginationInfo": {
+            "type": "object",
+            "properties": {
+                "current_page": {
+                    "type": "integer"
+                },
+                "last_page": {
+                    "type": "integer"
+                },
+                "per_page": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.HealthResponse": {
             "type": "object",
             "properties": {
@@ -447,33 +1189,24 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ModuleCreateRequest": {
+        "dto.ItemCreateRequest": {
             "type": "object",
             "required": [
-                "description",
                 "name"
             ],
             "properties": {
-                "description": {
-                    "type": "string",
-                    "maxLength": 500,
-                    "minLength": 10,
-                    "example": "Gestión de usuarios del sistema"
-                },
                 "name": {
+                    "description": "✅ Validación simple: required + longitud\nSi necesitas formato slug estricto, valida manualmente en el handler",
                     "type": "string",
-                    "maxLength": 100,
+                    "maxLength": 50,
                     "minLength": 3,
-                    "example": "Usuarios"
+                    "example": "crear_usuario"
                 }
             }
         },
-        "dto.ModuleResponse": {
+        "dto.ItemResponse": {
             "type": "object",
             "properties": {
-                "description": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
                 },
@@ -482,24 +1215,71 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ModuleUpdateRequest": {
+        "dto.ItemUpdateRequest": {
             "type": "object",
             "required": [
-                "description",
                 "name"
             ],
             "properties": {
-                "description": {
+                "name": {
                     "type": "string",
-                    "maxLength": 500,
-                    "minLength": 10,
-                    "example": "Gestión de usuarios del sistema"
-                },
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "actualizar_usuario"
+                }
+            }
+        },
+        "dto.ModuleCreateRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "slug"
+            ],
+            "properties": {
                 "name": {
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 3,
                     "example": "Usuarios"
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "/setting/users"
+                }
+            }
+        },
+        "dto.ModuleResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ModuleUpdateRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "slug"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Usuarios"
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "/setting/users"
                 }
             }
         },
@@ -538,6 +1318,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ProfileSummary": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ProfileUpdateRequest": {
             "type": "object",
             "required": [
@@ -567,6 +1358,135 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.UserCreateRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "cesar@tudominio.com"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 2,
+                    "example": "César Pérez"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 8,
+                    "example": "MiClave123!"
+                },
+                "phone": {
+                    "description": "Metadata (se guarda en user_metadata)",
+                    "type": "string",
+                    "maxLength": 20,
+                    "example": "+56912345678"
+                },
+                "profile_id": {
+                    "description": "← uint: FK a Profile",
+                    "type": "integer",
+                    "example": 1
+                },
+                "state": {
+                    "description": "← int: 0/1",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ],
+                    "example": 1
+                }
+            }
+        },
+        "dto.UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "description": "Metadata (joined desde user_metadata)",
+                    "type": "string"
+                },
+                "profile": {
+                    "description": "← Perfil anidado (opcional)",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/dto.ProfileSummary"
+                        }
+                    ]
+                },
+                "profile_id": {
+                    "description": "← uint",
+                    "type": "integer"
+                },
+                "state": {
+                    "description": "← int",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.UserUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "example": "cesar@tudominio.com"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 2,
+                    "example": "César Pérez"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 8,
+                    "example": "NuevaClave123!"
+                },
+                "phone": {
+                    "description": "Metadata",
+                    "type": "string",
+                    "maxLength": 20,
+                    "example": "+56912345678"
+                },
+                "profile_id": {
+                    "description": "← uint",
+                    "type": "integer",
+                    "example": 1
+                },
+                "state": {
+                    "description": "← int",
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ],
+                    "example": 1
                 }
             }
         }

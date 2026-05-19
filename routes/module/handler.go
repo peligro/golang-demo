@@ -22,15 +22,47 @@ func NewHandler(db *gorm.DB) *Handler {
 }
 
 // Index godoc
-// @Summary Listar módulos
-// @Description Retorna todos los módulos registrados ordenados por ID descendente
+// @Summary Listar módulos con paginación y búsqueda
+// @Description Retorna módulos paginados, con búsqueda por nombre y ordenamiento
 // @Tags Modules
 // @Produce json
-// @Success 200 {array} dto.ModuleResponse
+// @Param page query int false "Página" default(1)
+// @Param per_page query int false "Registros por página" default(20)
+// @Param search query string false "Término de búsqueda"
+// @Param field query string false "Campo a buscar" default(name) Enums(name)
+// @Param sort_by query string false "Campo para ordenar" Enums(id,name,slug,created_at)
+// @Param sort_dir query string false "Dirección" Enums(asc,desc)
+// @Success 200 {object} common.PaginatedResponse[dto.ModuleResponse]
 // @Router /modules [get]
 func (h *Handler) Index(c *gin.Context) {
+	// Parsear parámetros con valores por defecto
+	params := common.DefaultPagination()
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Parámetros de consulta inválidos",
+		})
+		return
+	}
+
+	// Whitelist de campos permitidos
+	searchableFields := []string{"name"}
+	allowedSortFields := []string{"id", "name", "slug", "created_at"}
+
+	// Construir query base
+	query := h.db.Model(&model.Module{})
+
+	// Aplicar búsqueda y ordenamiento
+	query = params.Apply(query, searchableFields, allowedSortFields)
+
+	// Obtener total para metadatos de paginación
+	var total int64
+	h.db.Model(&model.Module{}).Count(&total)
+
+	// Aplicar paginación y ejecutar
+	offset := (params.Page - 1) * params.PerPage
 	var modules []model.Module
-	if err := h.db.Order("id desc").Find(&modules).Error; err != nil {
+	if err := query.Offset(offset).Limit(params.PerPage).Find(&modules).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
 			"message": "Error al consultar módulos",
@@ -38,15 +70,18 @@ func (h *Handler) Index(c *gin.Context) {
 		return
 	}
 
-	response := make(dto.ModulesResponse, len(modules))
+	// Mapear a DTOs
+	response := make([]dto.ModuleResponse, len(modules))
 	for i, m := range modules {
 		response[i] = dto.ModuleResponse{
-			ID:          m.ID,
-			Name:        m.Name,
-			Description: m.Description,
+			ID:   m.ID,
+			Name: m.Name,
+			Slug: m.Slug,
 		}
 	}
-	c.JSON(http.StatusOK, response)
+
+	// Retornar respuesta compatible con React PaginationInfo
+	c.JSON(http.StatusOK, common.NewPaginatedResponse(response, int(total), params.Page, params.PerPage))
 }
 
 // Show godoc
@@ -81,15 +116,15 @@ func (h *Handler) Show(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.ModuleResponse{
-		ID:          module.ID,
-		Name:        module.Name,
-		Description: module.Description,
+		ID:   module.ID,
+		Name: module.Name,
+		Slug: module.Slug,
 	})
 }
 
 // Create godoc
 // @Summary Crear nuevo módulo
-// @Description Crea un nuevo módulo con nombre y descripción
+// @Description Crea un nuevo módulo con nombre y path (slug)
 // @Tags Modules
 // @Accept json
 // @Produce json
@@ -114,9 +149,19 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// Validar que no exista el slug/path
+	if err := h.db.Where("slug = ?", body.Slug).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"status":  "error",
+			"message": "El path ya está en uso",
+			"field":   "slug",
+		})
+		return
+	}
+
 	newModule := model.Module{
-		Name:        body.Name,
-		Description: body.Description,
+		Name: body.Name,
+		Slug: body.Slug,
 	}
 	if err := h.db.Create(&newModule).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -127,15 +172,15 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, dto.ModuleResponse{
-		ID:          newModule.ID,
-		Name:        newModule.Name,
-		Description: newModule.Description,
+		ID:   newModule.ID,
+		Name: newModule.Name,
+		Slug: newModule.Slug,
 	})
 }
 
 // Update godoc
 // @Summary Actualizar módulo
-// @Description Actualiza nombre y descripción de un módulo existente
+// @Description Actualiza nombre y path de un módulo existente
 // @Tags Modules
 // @Accept json
 // @Produce json
@@ -182,8 +227,18 @@ func (h *Handler) Update(c *gin.Context) {
 		return
 	}
 
+	// Validar slug único (excluyendo el propio registro)
+	if err := h.db.Where("slug = ? AND id != ?", body.Slug, id).First(&existing).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"status":  "error",
+			"message": "El path ya está en uso",
+			"field":   "slug",
+		})
+		return
+	}
+
 	module.Name = body.Name
-	module.Description = body.Description
+	module.Slug = body.Slug
 	if err := h.db.Save(&module).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status":  "error",
@@ -193,9 +248,9 @@ func (h *Handler) Update(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.ModuleResponse{
-		ID:          module.ID,
-		Name:        module.Name,
-		Description: module.Description,
+		ID:   module.ID,
+		Name: module.Name,
+		Slug: module.Slug,
 	})
 }
 

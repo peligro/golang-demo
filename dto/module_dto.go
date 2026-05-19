@@ -4,8 +4,8 @@ import "github.com/go-playground/validator/v10"
 
 // ModuleCreateRequest para POST /modules
 type ModuleCreateRequest struct {
-	Name        string `json:"name" binding:"required,min=3,max=100" example:"Usuarios"`
-	Description string `json:"description" binding:"required,min=10,max=500" example:"Gestión de usuarios del sistema"`
+	Name string `json:"name" binding:"required,min=3,max=100" example:"Usuarios"`
+	Slug string `json:"slug" binding:"required,startswith=/,max=100" example:"/setting/users"`
 }
 
 func (m ModuleCreateRequest) MensajesDeError(ve validator.ValidationErrors) map[string]string {
@@ -21,14 +21,14 @@ func (m ModuleCreateRequest) MensajesDeError(ve validator.ValidationErrors) map[
 			case "max":
 				errs["name"] = "El nombre no puede exceder 100 caracteres"
 			}
-		case "Description":
+		case "Slug":
 			switch e.Tag() {
 			case "required":
-				errs["description"] = "La descripción es obligatoria"
-			case "min":
-				errs["description"] = "La descripción debe tener al menos 10 caracteres"
+				errs["slug"] = "El path es obligatorio"
+			case "startswith":
+				errs["slug"] = "El path debe comenzar con /"
 			case "max":
-				errs["description"] = "La descripción no puede exceder 500 caracteres"
+				errs["slug"] = "El path no puede exceder 100 caracteres"
 			}
 		}
 	}
@@ -37,20 +37,17 @@ func (m ModuleCreateRequest) MensajesDeError(ve validator.ValidationErrors) map[
 
 // ModuleUpdateRequest para PUT /modules/:id
 type ModuleUpdateRequest struct {
-	Name        string `json:"name" binding:"required,min=3,max=100" example:"Usuarios"`
-	Description string `json:"description" binding:"required,min=10,max=500" example:"Gestión de usuarios del sistema"`
+	Name string `json:"name" binding:"required,min=3,max=100" example:"Usuarios"`
+	Slug string `json:"slug" binding:"required,startswith=/,max=100" example:"/setting/users"`
 }
 
 func (m ModuleUpdateRequest) MensajesDeError(ve validator.ValidationErrors) map[string]string {
-	return ModuleCreateRequest{Name: m.Name, Description: m.Description}.MensajesDeError(ve)
+	return ModuleCreateRequest{Name: m.Name, Slug: m.Slug}.MensajesDeError(ve)
 }
 
-// ModuleResponse para respuestas
+// ModuleResponse para respuestas (compatible con frontend)
 type ModuleResponse struct {
-	ID          uint   `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID   uint   `json:"id"`
+	Name string `json:"name"`
+	Slug string `json:"slug"`
 }
-
-// ModulesResponse para listas
-type ModulesResponse []ModuleResponse

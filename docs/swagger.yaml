@@ -1,51 +1,117 @@
 basePath: /
 definitions:
+  common.PaginatedResponse-dto_ModuleResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.ModuleResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/common.PaginationInfo'
+    type: object
+  common.PaginatedResponse-dto_ProfileResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.ProfileResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/common.PaginationInfo'
+    type: object
+  common.PaginatedResponse-dto_UserResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.UserResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/common.PaginationInfo'
+    type: object
+  common.PaginationInfo:
+    properties:
+      current_page:
+        type: integer
+      last_page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+    type: object
   dto.HealthResponse:
     properties:
       status:
         example: UP!!
         type: string
     type: object
-  dto.ModuleCreateRequest:
+  dto.ItemCreateRequest:
     properties:
-      description:
-        example: Gestión de usuarios del sistema
-        maxLength: 500
-        minLength: 10
-        type: string
       name:
-        example: Usuarios
-        maxLength: 100
+        description: |-
+          ✅ Validación simple: required + longitud
+          Si necesitas formato slug estricto, valida manualmente en el handler
+        example: crear_usuario
+        maxLength: 50
         minLength: 3
         type: string
     required:
-    - description
     - name
     type: object
-  dto.ModuleResponse:
+  dto.ItemResponse:
     properties:
-      description:
-        type: string
       id:
         type: integer
       name:
         type: string
     type: object
-  dto.ModuleUpdateRequest:
+  dto.ItemUpdateRequest:
     properties:
-      description:
-        example: Gestión de usuarios del sistema
-        maxLength: 500
-        minLength: 10
+      name:
+        example: actualizar_usuario
+        maxLength: 50
+        minLength: 3
         type: string
+    required:
+    - name
+    type: object
+  dto.ModuleCreateRequest:
+    properties:
       name:
         example: Usuarios
         maxLength: 100
         minLength: 3
         type: string
+      slug:
+        example: /setting/users
+        maxLength: 100
+        type: string
     required:
-    - description
     - name
+    - slug
+    type: object
+  dto.ModuleResponse:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  dto.ModuleUpdateRequest:
+    properties:
+      name:
+        example: Usuarios
+        maxLength: 100
+        minLength: 3
+        type: string
+      slug:
+        example: /setting/users
+        maxLength: 100
+        type: string
+    required:
+    - name
+    - slug
     type: object
   dto.ProfileCreateRequest:
     properties:
@@ -67,6 +133,13 @@ definitions:
     properties:
       description:
         type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  dto.ProfileSummary:
+    properties:
       id:
         type: integer
       name:
@@ -95,6 +168,102 @@ definitions:
       name:
         type: string
     type: object
+  dto.UserCreateRequest:
+    properties:
+      email:
+        example: cesar@tudominio.com
+        maxLength: 255
+        type: string
+      name:
+        example: César Pérez
+        maxLength: 255
+        minLength: 2
+        type: string
+      password:
+        example: MiClave123!
+        maxLength: 100
+        minLength: 8
+        type: string
+      phone:
+        description: Metadata (se guarda en user_metadata)
+        example: "+56912345678"
+        maxLength: 20
+        type: string
+      profile_id:
+        description: '← uint: FK a Profile'
+        example: 1
+        type: integer
+      state:
+        description: '← int: 0/1'
+        enum:
+        - 0
+        - 1
+        example: 1
+        type: integer
+    required:
+    - email
+    - name
+    - password
+    type: object
+  dto.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        description: Metadata (joined desde user_metadata)
+        type: string
+      profile:
+        allOf:
+        - $ref: '#/definitions/dto.ProfileSummary'
+        description: ← Perfil anidado (opcional)
+      profile_id:
+        description: ← uint
+        type: integer
+      state:
+        description: ← int
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  dto.UserUpdateRequest:
+    properties:
+      email:
+        example: cesar@tudominio.com
+        maxLength: 255
+        type: string
+      name:
+        example: César Pérez
+        maxLength: 255
+        minLength: 2
+        type: string
+      password:
+        example: NuevaClave123!
+        maxLength: 100
+        minLength: 8
+        type: string
+      phone:
+        description: Metadata
+        example: "+56912345678"
+        maxLength: 20
+        type: string
+      profile_id:
+        description: ← uint
+        example: 1
+        type: integer
+      state:
+        description: ← int
+        enum:
+        - 0
+        - 1
+        example: 1
+        type: integer
+    type: object
 host: localhost:8082
 info:
   contact: {}
@@ -115,9 +284,9 @@ paths:
       summary: Verifica estado del servidor
       tags:
       - Health
-  /modules:
+  /items:
     get:
-      description: Retorna todos los módulos registrados ordenados por ID descendente
+      description: Retorna todos los items registrados ordenados por ID descendente
       produces:
       - application/json
       responses:
@@ -125,15 +294,176 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/dto.ModuleResponse'
+              $ref: '#/definitions/dto.ItemResponse'
             type: array
-      summary: Listar módulos
+      summary: Listar items
+      tags:
+      - Items
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo item (acción) con nombre único
+      parameters:
+      - description: Datos del item
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ItemCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo item
+      tags:
+      - Items
+  /items/{id}:
+    delete:
+      description: Elimina un item por su ID (valida dependencias con profile_module_item)
+      parameters:
+      - description: ID del item
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar item
+      tags:
+      - Items
+    get:
+      description: Retorna un item específico por su ID
+      parameters:
+      - description: ID del item
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ItemResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener item por ID
+      tags:
+      - Items
+    put:
+      consumes:
+      - application/json
+      description: Actualiza el nombre de un item existente
+      parameters:
+      - description: ID del item
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Nuevo nombre
+        in: body
+        name: item
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ItemUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ItemResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar item
+      tags:
+      - Items
+  /modules:
+    get:
+      description: Retorna módulos paginados, con búsqueda por nombre y ordenamiento
+      parameters:
+      - default: 1
+        description: Página
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Registros por página
+        in: query
+        name: per_page
+        type: integer
+      - description: Término de búsqueda
+        in: query
+        name: search
+        type: string
+      - default: name
+        description: Campo a buscar
+        enum:
+        - name
+        in: query
+        name: field
+        type: string
+      - description: Campo para ordenar
+        enum:
+        - id
+        - name
+        - slug
+        - created_at
+        in: query
+        name: sort_by
+        type: string
+      - description: Dirección
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedResponse-dto_ModuleResponse'
+      summary: Listar módulos con paginación y búsqueda
       tags:
       - Modules
     post:
       consumes:
       - application/json
-      description: Crea un nuevo módulo con nombre y descripción
+      description: Crea un nuevo módulo con nombre y path (slug)
       parameters:
       - description: Datos del módulo
         in: body
@@ -211,7 +541,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Actualiza nombre y descripción de un módulo existente
+      description: Actualiza nombre y path de un módulo existente
       parameters:
       - description: ID del módulo
         in: path
@@ -242,17 +572,52 @@ paths:
       - Modules
   /profiles:
     get:
-      description: Retorna todos los perfiles registrados ordenados por ID descendente
+      description: Retorna perfiles paginados, con búsqueda por nombre y ordenamiento
+      parameters:
+      - default: 1
+        description: Página
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Registros por página
+        in: query
+        name: per_page
+        type: integer
+      - description: Término de búsqueda
+        in: query
+        name: search
+        type: string
+      - default: name
+        description: Campo a buscar
+        enum:
+        - name
+        in: query
+        name: field
+        type: string
+      - description: Campo para ordenar
+        enum:
+        - id
+        - name
+        - created_at
+        in: query
+        name: sort_by
+        type: string
+      - description: Dirección
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_dir
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/dto.ProfileResponse'
-            type: array
-      summary: Listar perfiles
+            $ref: '#/definitions/common.PaginatedResponse-dto_ProfileResponse'
+      summary: Listar perfiles con paginación y búsqueda
       tags:
       - Profiles
     post:
@@ -380,6 +745,276 @@ paths:
       summary: Listar estados
       tags:
       - States
+  /users:
+    get:
+      description: Retorna usuarios paginados con búsqueda por nombre/email, filtros
+        por estado y perfil, y ordenamiento flexible
+      parameters:
+      - default: 1
+        description: Página
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Registros por página
+        in: query
+        maximum: 100
+        minimum: 1
+        name: per_page
+        type: integer
+      - description: Término de búsqueda
+        in: query
+        name: search
+        type: string
+      - default: name
+        description: Campo a buscar
+        enum:
+        - name
+        - email
+        in: query
+        name: field
+        type: string
+      - description: Filtrar por estado
+        enum:
+        - 0
+        - 1
+        in: query
+        name: state
+        type: integer
+      - description: Filtrar por perfil
+        in: query
+        name: profile_id
+        type: integer
+      - default: id
+        description: Campo para ordenar
+        enum:
+        - id
+        - name
+        - email
+        - created_at
+        in: query
+        name: sort_by
+        type: string
+      - default: desc
+        description: Dirección de ordenamiento
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedResponse-dto_UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar usuarios con paginación y filtros avanzados
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Crea un usuario con validación de email único, password hasheado
+        con bcrypt, y metadata opcional
+      parameters:
+      - description: Datos del usuario
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo usuario
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      description: Elimina un usuario y su metadata asociada de forma segura
+      parameters:
+      - description: ID del usuario
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar usuario
+      tags:
+      - Users
+    get:
+      description: Retorna un usuario específico con su metadata y perfil asociado
+      parameters:
+      - description: ID del usuario
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener usuario por ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Actualiza datos del usuario, metadata y password (opcional) con
+        validaciones robustas
+      parameters:
+      - description: ID del usuario
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Nuevos datos del usuario
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar usuario
+      tags:
+      - Users
+  /users/me:
+    get:
+      description: Retorna los datos del usuario autenticado (requiere middleware
+        de auth)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener usuario autenticado
+      tags:
+      - Users
 schemes:
 - http
 securityDefinitions:

@@ -5,7 +5,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// RegisterRoutes registra las rutas de Module en el router
 func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	handler := NewHandler(db)
 
