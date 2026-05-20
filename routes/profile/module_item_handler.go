@@ -42,7 +42,7 @@ func (h *ModuleItemHandler) Index(c *gin.Context) {
 		return
 	}
 
-	// Validar que el perfil y módulo existen y están relacionados
+	// Validar que el perfil existe
 	var profile model.Profile
 	if err := h.db.First(&profile, profileID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -53,8 +53,11 @@ func (h *ModuleItemHandler) Index(c *gin.Context) {
 		return
 	}
 
+	// Validar que profile_module existe (con Preload de Module para evitar nil pointer)
 	var profileModule model.ProfileModule
-	if err := h.db.Where("profile_id = ? AND module_id = ?", profileID, moduleID).First(&profileModule).Error; err != nil {
+	if err := h.db.Preload("Module").
+		Where("profile_id = ? AND module_id = ?", profileID, moduleID).
+		First(&profileModule).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{
 				"status":  "error",
@@ -66,7 +69,7 @@ func (h *ModuleItemHandler) Index(c *gin.Context) {
 		return
 	}
 
-	// Obtener items asignados vía profile_module_item
+	// Obtener items asignados vía profile_module_item (con Preload de Item)
 	var profileModuleItems []model.ProfileModuleItem
 	if err := h.db.Where("profile_module_id = ?", profileModule.ID).
 		Preload("Item").
@@ -78,25 +81,36 @@ func (h *ModuleItemHandler) Index(c *gin.Context) {
 		return
 	}
 
-	// Mapear a respuesta
+	// Mapear a respuesta (solo ID y Name, que son los campos que existen en model.Item)
 	items := make([]map[string]interface{}, len(profileModuleItems))
 	itemIDs := make([]uint, len(profileModuleItems))
 	for i, pmi := range profileModuleItems {
-		items[i] = map[string]interface{}{
-			"id":          pmi.Item.ID,
-			"name":        pmi.Item.Name,
-			"code":        pmi.Item.Code,
-			"description": pmi.Item.Description,
+		// ✅ Verificar que Item no sea nil antes de acceder
+		itemName := ""
+		if pmi.Item != nil {
+			itemName = pmi.Item.Name
 		}
-		itemIDs[i] = pmi.Item.ID
+		items[i] = map[string]interface{}{
+			"id":   pmi.ItemID,    // ← Usar ItemID directamente (siempre existe)
+			"name": itemName,      // ← Solo si Item != nil
+		}
+		itemIDs[i] = pmi.ItemID
+	}
+
+	// ✅ Verificar que Module no sea nil antes de acceder a Name/Slug
+	moduleName := ""
+	moduleSlug := ""
+	if profileModule.Module != nil {
+		moduleName = profileModule.Module.Name
+		moduleSlug = profileModule.Module.Slug
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"profile_id":   profile.ID,
 		"profile_name": profile.Name,
 		"module_id":    moduleID,
-		"module_name":  profileModule.Module.Name,
-		"module_slug":  profileModule.Module.Slug,
+		"module_name":  moduleName,  // ← Seguro: vacío si Module es nil
+		"module_slug":  moduleSlug,  // ← Seguro: vacío si Module es nil
 		"items":        items,
 		"item_ids":     itemIDs,
 		"total":        len(items),
@@ -294,7 +308,6 @@ func (h *ModuleItemHandler) Attach(c *gin.Context) {
 		"item": map[string]interface{}{
 			"id":   item.ID,
 			"name": item.Name,
-			"code": item.Code,
 		},
 	})
 }

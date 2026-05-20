@@ -165,7 +165,7 @@ func (h *ModuleHandler) Sync(c *gin.Context) {
 			profileModules := make([]model.ProfileModule, len(req.Modules))
 			for i, moduleID := range req.Modules {
 				profileModules[i] = model.ProfileModule{
-					ProfileID: profileID,
+					ProfileID: uint(profileID),
 					ModuleID:  moduleID,
 				}
 			}
