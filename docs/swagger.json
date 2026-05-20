@@ -700,6 +700,343 @@
                 }
             }
         },
+        "/profiles/{id}/modules": {
+            "get": {
+                "description": "Retorna los módulos asignados a un perfil específico",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile Modules"
+                ],
+                "summary": "Listar módulos asignados a un perfil",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del perfil",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Asigna o remueve módulos de un perfil (operación sync)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile Modules"
+                ],
+                "summary": "Sincronizar módulos de un perfil",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del perfil",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Array de IDs de módulos",
+                        "name": "modules",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProfileModuleSyncRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profiles/{id}/modules/{moduleId}/items": {
+            "get": {
+                "description": "Retorna los items/permisos asignados a un módulo específico de un perfil",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile Module Items"
+                ],
+                "summary": "Listar items de un módulo de perfil",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del perfil",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID del módulo",
+                        "name": "moduleId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Asigna o remueve items/permisos de un módulo específico (sync)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile Module Items"
+                ],
+                "summary": "Sincronizar items de un módulo de perfil",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del perfil",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID del módulo",
+                        "name": "moduleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Array de IDs de items",
+                        "name": "items",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProfileModuleItemSyncRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Asigna un item/permiso específico sin afectar los demás",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile Module Items"
+                ],
+                "summary": "Agregar item individual a un módulo de perfil",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del perfil",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID del módulo",
+                        "name": "moduleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "ID del item",
+                        "name": "item",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProfileModuleItemAttachRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profiles/{id}/modules/{moduleId}/items/{itemId}": {
+            "delete": {
+                "description": "Remueve un item/permiso específico de un módulo de perfil",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Profile Module Items"
+                ],
+                "summary": "Eliminar item de un módulo de perfil",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del perfil",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID del módulo",
+                        "name": "moduleId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID del item",
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/states": {
             "get": {
                 "description": "Retorna todos los estados registrados ordenados por ID descendente",
@@ -837,18 +1174,30 @@
                 }
             },
             "post": {
-                "description": "Crea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional",
+                "description": "Crea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional\nCrea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional",
                 "consumes": [
+                    "application/json",
                     "application/json"
                 ],
                 "produces": [
+                    "application/json",
                     "application/json"
                 ],
                 "tags": [
+                    "Users",
                     "Users"
                 ],
                 "summary": "Crear nuevo usuario",
                 "parameters": [
+                    {
+                        "description": "Datos del usuario",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserCreateRequest"
+                        }
+                    },
                     {
                         "description": "Datos del usuario",
                         "name": "user",
@@ -1301,6 +1650,40 @@
                 }
             }
         },
+        "dto.ProfileModuleItemAttachRequest": {
+            "type": "object",
+            "required": [
+                "item_id"
+            ],
+            "properties": {
+                "item_id": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "dto.ProfileModuleItemSyncRequest": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "dto.ProfileModuleSyncRequest": {
+            "type": "object",
+            "properties": {
+                "modules": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
+        },
         "dto.ProfileResponse": {
             "type": "object",
             "properties": {
@@ -1381,21 +1764,20 @@
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 8,
-                    "example": "MiClave123!"
+                    "example": "********"
                 },
                 "phone": {
-                    "description": "Metadata (se guarda en user_metadata)",
+                    "description": "Metadata (opcional)",
                     "type": "string",
                     "maxLength": 20,
                     "example": "+56912345678"
                 },
                 "profile_id": {
-                    "description": "← uint: FK a Profile",
                     "type": "integer",
                     "example": 1
                 },
                 "state": {
-                    "description": "← int: 0/1",
+                    "description": "← *int para distinguir \"no enviado\" de \"0\"",
                     "type": "integer",
                     "enum": [
                         0,
@@ -1408,7 +1790,8 @@
         "dto.UserResponse": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "date": {
+                    "description": "← \"19/05/2026\"",
                     "type": "string"
                 },
                 "email": {
@@ -1421,26 +1804,20 @@
                     "type": "string"
                 },
                 "phone": {
-                    "description": "Metadata (joined desde user_metadata)",
                     "type": "string"
                 },
                 "profile": {
-                    "description": "← Perfil anidado (opcional)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/dto.ProfileSummary"
-                        }
-                    ]
+                    "$ref": "#/definitions/dto.ProfileSummary"
                 },
                 "profile_id": {
-                    "description": "← uint",
                     "type": "integer"
                 },
                 "state": {
-                    "description": "← int",
+                    "description": "← 1=activo, 0=inactivo",
                     "type": "integer"
                 },
-                "updated_at": {
+                "time": {
+                    "description": "← \"22:39:17\"",
                     "type": "string"
                 }
             }
@@ -1463,21 +1840,19 @@
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 8,
-                    "example": "NuevaClave123!"
+                    "example": "********"
                 },
                 "phone": {
-                    "description": "Metadata",
                     "type": "string",
                     "maxLength": 20,
                     "example": "+56912345678"
                 },
                 "profile_id": {
-                    "description": "← uint",
                     "type": "integer",
                     "example": 1
                 },
                 "state": {
-                    "description": "← int",
+                    "description": "← *int",
                     "type": "integer",
                     "enum": [
                         0,

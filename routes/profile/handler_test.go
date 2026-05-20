@@ -110,7 +110,8 @@ func TestModuleHandler_Index_Integration(t *testing.T) {
 	t.Run("Listar módulos de un perfil", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodGet, "/profiles/1/modules", nil)
 		handler.Index(c)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -124,7 +125,8 @@ func TestModuleHandler_Index_Integration(t *testing.T) {
 	t.Run("Perfil no encontrado → 404", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "999"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "999"}}
 		c.Request = httptest.NewRequest(http.MethodGet, "/profiles/999/modules", nil)
 		handler.Index(c)
 		assert.Equal(t, http.StatusNotFound, w.Code)
@@ -141,7 +143,8 @@ func TestModuleHandler_Sync_Integration(t *testing.T) {
 	t.Run("Sincronizar módulos", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodPut, "/profiles/1/modules",
 			bytes.NewBufferString(`{"modules": [1, 2]}`))
 		c.Request.Header.Set("Content-Type", "application/json")
@@ -155,7 +158,8 @@ func TestModuleHandler_Sync_Integration(t *testing.T) {
 	t.Run("Módulo inexistente → 400", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodPut, "/profiles/1/modules",
 			bytes.NewBufferString(`{"modules": [999]}`))
 		c.Request.Header.Set("Content-Type", "application/json")
@@ -178,7 +182,8 @@ func TestModuleItemHandler_Index_Integration(t *testing.T) {
 	t.Run("Listar items", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}, {Key: "moduleId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}, {Key: "moduleId", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodGet, "/profiles/1/modules/1/items", nil)
 		handler.Index(c)
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -202,7 +207,8 @@ func TestModuleItemHandler_Sync_Integration(t *testing.T) {
 	t.Run("Sincronizar items", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}, {Key: "moduleId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}, {Key: "moduleId", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodPut, "/profiles/1/modules/1/items",
 			bytes.NewBufferString(`{"items": [1, 2]}`))
 		c.Request.Header.Set("Content-Type", "application/json")
@@ -222,7 +228,8 @@ func TestModuleItemHandler_Attach_Integration(t *testing.T) {
 	t.Run("Agregar item", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}, {Key: "moduleId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}, {Key: "moduleId", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodPost, "/profiles/1/modules/1/items",
 			bytes.NewBufferString(`{"item_id": 1}`))
 		c.Request.Header.Set("Content-Type", "application/json")
@@ -234,7 +241,8 @@ func TestModuleItemHandler_Attach_Integration(t *testing.T) {
 		db.Create(&model.ProfileModuleItem{ProfileModuleID: 1, ItemID: 1})
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}, {Key: "moduleId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}, {Key: "moduleId", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodPost, "/profiles/1/modules/1/items",
 			bytes.NewBufferString(`{"item_id": 1}`))
 		c.Request.Header.Set("Content-Type", "application/json")
@@ -255,7 +263,8 @@ func TestModuleItemHandler_Detach_Integration(t *testing.T) {
 	t.Run("Eliminar item", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
-		c.Params = []gin.Param{{Key: "profileId", Value: "1"}, {Key: "moduleId", Value: "1"}, {Key: "itemId", Value: "1"}}
+		// ✅ CORREGIDO: usar "id" en vez de "profileId"
+		c.Params = []gin.Param{{Key: "id", Value: "1"}, {Key: "moduleId", Value: "1"}, {Key: "itemId", Value: "1"}}
 		c.Request = httptest.NewRequest(http.MethodDelete, "/profiles/1/modules/1/items/1", nil)
 		handler.Detach(c)
 		assert.Equal(t, http.StatusOK, w.Code)

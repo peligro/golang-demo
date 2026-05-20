@@ -7,7 +7,6 @@ import (
 
 // RegisterRoutes registra todas las rutas de Profile + ProfileModule + ProfileModuleItem
 func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
-	// Handlers
 	handler := NewHandler(db)
 	moduleHandler := NewModuleHandler(db)
 	itemHandler := NewModuleItemHandler(db)
@@ -21,12 +20,12 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 		profiles.PUT("/:id", handler.Update)
 		profiles.DELETE("/:id", handler.Delete)
 
-		// 🔗 Profile Modules (anidado)
-		profiles.GET("/:profileId/modules", moduleHandler.Index)
-		profiles.PUT("/:profileId/modules", moduleHandler.Sync)
+		// 🔗 Profile Modules (anidado) - ✅ Usar :id igual que el CRUD
+		profiles.GET("/:id/modules", moduleHandler.Index)
+		profiles.PUT("/:id/modules", moduleHandler.Sync)
 
-		// 🔗 Profile Module Items (anidado profundo)
-		items := profiles.Group("/:profileId/modules/:moduleId/items")
+		// 🔗 Profile Module Items (anidado profundo) - ✅ Usar :id igual que el CRUD
+		items := profiles.Group("/:id/modules/:moduleId/items")
 		{
 			items.GET("", itemHandler.Index)
 			items.PUT("", itemHandler.Sync)

@@ -54,3 +54,23 @@ type ProfileResponse struct {
 
 // ProfilesResponse para listas
 type ProfilesResponse []ProfileResponse
+
+
+// =============================================================================
+// PROFILE MODULE REQUESTS
+// =============================================================================
+
+// ProfileModuleSyncRequest para PUT /profiles/:id/modules
+type ProfileModuleSyncRequest struct {
+	Modules []uint `json:"modules" binding:"omitempty"`
+}
+
+// ProfileModuleItemSyncRequest para PUT /profiles/:id/modules/:moduleId/items
+type ProfileModuleItemSyncRequest struct {
+	Items []uint `json:"items" binding:"omitempty"`
+}
+
+// ProfileModuleItemAttachRequest para POST /profiles/:id/modules/:moduleId/items
+type ProfileModuleItemAttachRequest struct {
+	ItemID uint `json:"item_id" binding:"required" example:"1"`
+}
