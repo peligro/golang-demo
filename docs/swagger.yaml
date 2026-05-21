@@ -74,6 +74,35 @@ definitions:
     required:
     - name
     type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        example: cesar@tudominio.com
+        type: string
+      password:
+        description: ← Placeholder genérico
+        example: '********'
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.LoginResponse:
+    properties:
+      user:
+        $ref: '#/definitions/dto.UserResponse'
+    type: object
+  dto.LogoutResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  dto.MeResponse:
+    properties:
+      user:
+        $ref: '#/definitions/dto.UserResponse'
+    type: object
   dto.ModuleCreateRequest:
     properties:
       name:
@@ -183,6 +212,11 @@ definitions:
     - description
     - name
     type: object
+  dto.RefreshResponse:
+    properties:
+      message:
+        type: string
+    type: object
   dto.StateResponse:
     properties:
       id:
@@ -288,6 +322,97 @@ info:
   title: Golang DEMO
   version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentica al usuario y crea una sesión con cookie HTTP-only
+      parameters:
+      - description: Credenciales
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.LoginResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Iniciar sesión
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Invalida la sesión actual y elimina la cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.LogoutResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Cerrar sesión
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      description: Retorna los datos del usuario actualmente autenticado
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.MeResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener usuario autenticado
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      description: Extiende el TTL de la sesión actual
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.RefreshResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Renovar sesión
+      tags:
+      - Auth
   /health:
     get:
       description: Retorna "UP!!" si el servicio está activo
