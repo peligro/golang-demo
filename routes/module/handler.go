@@ -1,24 +1,26 @@
 package module
 
 import (
-	"net/http"
+  "errors"
+  "net/http"
 
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+  "github.com/gin-gonic/gin"
+  "gorm.io/gorm"
 
-	"github.com/peligro/golang-demo/common"
-	"github.com/peligro/golang-demo/dto"
-	"github.com/peligro/golang-demo/model"
+  "github.com/peligro/golang-demo/common"
+  "github.com/peligro/golang-demo/dto"
 )
 
 // Handler maneja las operaciones HTTP para Modules
 type Handler struct {
-	db *gorm.DB
+  service *Service
 }
 
 // NewHandler crea una nueva instancia
 func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{db: db}
+  return &Handler{
+    service: NewService(db), // ← Inyectar servicio
+  }
 }
 
 // Index godoc
@@ -35,53 +37,25 @@ func NewHandler(db *gorm.DB) *Handler {
 // @Success 200 {object} common.PaginatedResponse[dto.ModuleResponse]
 // @Router /modules [get]
 func (h *Handler) Index(c *gin.Context) {
-	// Parsear parámetros con valores por defecto
-	params := common.DefaultPagination()
-	if err := c.ShouldBindQuery(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"message": "Parámetros de consulta inválidos",
-		})
-		return
-	}
+  // Parsear parámetros con valores por defecto
+  params := common.DefaultPagination()
+  if err := c.ShouldBindQuery(&params); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{
+      "status":  "error",
+      "message": "Parámetros de consulta inválidos",
+    })
+    return
+  }
 
-	// Whitelist de campos permitidos
-	searchableFields := []string{"name"}
-	allowedSortFields := []string{"id", "name", "slug", "created_at"}
-
-	// Construir query base
-	query := h.db.Model(&model.Module{})
-
-	// Aplicar búsqueda y ordenamiento
-	query = params.Apply(query, searchableFields, allowedSortFields)
-
-	// Obtener total para metadatos de paginación
-	var total int64
-	h.db.Model(&model.Module{}).Count(&total)
-
-	// Aplicar paginación y ejecutar
-	offset := (params.Page - 1) * params.PerPage
-	var modules []model.Module
-	if err := query.Offset(offset).Limit(params.PerPage).Find(&modules).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar módulos",
-		})
-		return
-	}
-
-	// Mapear a DTOs
-	response := make([]dto.ModuleResponse, len(modules))
-	for i, m := range modules {
-		response[i] = dto.ModuleResponse{
-			ID:   m.ID,
-			Name: m.Name,
-			Slug: m.Slug,
-		}
-	}
-
-	// Retornar respuesta compatible con React PaginationInfo
-	c.JSON(http.StatusOK, common.NewPaginatedResponse(response, int(total), params.Page, params.PerPage))
+  response, err := h.service.ListPaginated(params)
+  if err != nil {
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al consultar módulos",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, response)
 }
 
 // Show godoc
@@ -94,32 +68,27 @@ func (h *Handler) Index(c *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /modules/{id} [get]
 func (h *Handler) Show(c *gin.Context) {
-	id, ok := common.ParseID(c, "id")
-	if !ok {
-		return
-	}
+  id, ok := common.ParseID(c, "id")
+  if !ok {
+    return
+  }
 
-	var module model.Module
-	if err := h.db.First(&module, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  "error",
-				"message": common.ErrNotFound.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar el módulo",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, dto.ModuleResponse{
-		ID:   module.ID,
-		Name: module.Name,
-		Slug: module.Slug,
-	})
+  module, err := h.service.GetByID(uint(id))
+  if err != nil {
+    if errors.Is(err, common.ErrNotFound) {
+      c.JSON(http.StatusNotFound, gin.H{
+        "status":  "error",
+        "message": common.ErrNotFound.Error(),
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al consultar el módulo",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, module)
 }
 
 // Create godoc
@@ -133,49 +102,36 @@ func (h *Handler) Show(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Router /modules [post]
 func (h *Handler) Create(c *gin.Context) {
-	body, ok := common.BindAndValidate[dto.ModuleCreateRequest](c)
-	if !ok {
-		return
-	}
+  body, ok := common.BindAndValidate[dto.ModuleCreateRequest](c)
+  if !ok {
+    return
+  }
 
-	// Validar que no exista el nombre (case-insensitive)
-	var existing model.Module
-	if err := h.db.Where("LOWER(name) = LOWER(?)", body.Name).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": common.ErrDuplicate.Error(),
-			"field":   "name",
-		})
-		return
-	}
-
-	// Validar que no exista el slug/path
-	if err := h.db.Where("slug = ?", body.Slug).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": "El path ya está en uso",
-			"field":   "slug",
-		})
-		return
-	}
-
-	newModule := model.Module{
-		Name: body.Name,
-		Slug: body.Slug,
-	}
-	if err := h.db.Create(&newModule).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al crear el módulo",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, dto.ModuleResponse{
-		ID:   newModule.ID,
-		Name: newModule.Name,
-		Slug: newModule.Slug,
-	})
+  module, err := h.service.Create(body.Name, body.Slug)
+  if err != nil {
+    if err.Error() == "nombre duplicado" {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": common.ErrDuplicate.Error(),
+        "field":   "name",
+      })
+      return
+    }
+    if err.Error() == "path duplicado" {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": "El path ya está en uso",
+        "field":   "slug",
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al crear el módulo",
+    })
+    return
+  }
+  c.JSON(http.StatusCreated, module)
 }
 
 // Update godoc
@@ -190,68 +146,48 @@ func (h *Handler) Create(c *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /modules/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
-	id, ok := common.ParseID(c, "id")
-	if !ok {
-		return
-	}
+  id, ok := common.ParseID(c, "id")
+  if !ok {
+    return
+  }
 
-	body, ok := common.BindAndValidate[dto.ModuleUpdateRequest](c)
-	if !ok {
-		return
-	}
+  body, ok := common.BindAndValidate[dto.ModuleUpdateRequest](c)
+  if !ok {
+    return
+  }
 
-	var module model.Module
-	if err := h.db.First(&module, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  "error",
-				"message": common.ErrNotFound.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar el módulo",
-		})
-		return
-	}
-
-	// Validar nombre único (excluyendo el propio registro)
-	var existing model.Module
-	if err := h.db.Where("LOWER(name) = LOWER(?) AND id != ?", body.Name, id).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": common.ErrDuplicate.Error(),
-			"field":   "name",
-		})
-		return
-	}
-
-	// Validar slug único (excluyendo el propio registro)
-	if err := h.db.Where("slug = ? AND id != ?", body.Slug, id).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": "El path ya está en uso",
-			"field":   "slug",
-		})
-		return
-	}
-
-	module.Name = body.Name
-	module.Slug = body.Slug
-	if err := h.db.Save(&module).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al actualizar el módulo",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, dto.ModuleResponse{
-		ID:   module.ID,
-		Name: module.Name,
-		Slug: module.Slug,
-	})
+  module, err := h.service.Update(uint(id), body.Name, body.Slug)
+  if err != nil {
+    if errors.Is(err, common.ErrNotFound) {
+      c.JSON(http.StatusNotFound, gin.H{
+        "status":  "error",
+        "message": common.ErrNotFound.Error(),
+      })
+      return
+    }
+    if err.Error() == "nombre duplicado" {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": common.ErrDuplicate.Error(),
+        "field":   "name",
+      })
+      return
+    }
+    if err.Error() == "path duplicado" {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": "El path ya está en uso",
+        "field":   "slug",
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al actualizar el módulo",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, module)
 }
 
 // Delete godoc
@@ -264,48 +200,35 @@ func (h *Handler) Update(c *gin.Context) {
 // @Failure 404 {object} map[string]string
 // @Router /modules/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
-	id, ok := common.ParseID(c, "id")
-	if !ok {
-		return
-	}
+  id, ok := common.ParseID(c, "id")
+  if !ok {
+    return
+  }
 
-	var module model.Module
-	if err := h.db.First(&module, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  "error",
-				"message": common.ErrNotFound.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar el módulo",
-		})
-		return
-	}
-
-	// 🔒 Validar dependencias: ¿está asignado a algún profile_module?
-	var count int64
-	h.db.Model(&model.ProfileModule{}).Where("module_id = ?", id).Count(&count)
-	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": common.ErrHasDependencies.Error(),
-		})
-		return
-	}
-
-	if err := h.db.Delete(&module).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al eliminar el módulo",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "ok",
-		"message": "Módulo eliminado exitosamente",
-	})
+  err := h.service.Delete(uint(id))
+  if err != nil {
+    if errors.Is(err, common.ErrNotFound) {
+      c.JSON(http.StatusNotFound, gin.H{
+        "status":  "error",
+        "message": common.ErrNotFound.Error(),
+      })
+      return
+    }
+    if errors.Is(err, common.ErrHasDependencies) {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": common.ErrHasDependencies.Error(),
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al eliminar el módulo",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, gin.H{
+    "status":  "ok",
+    "message": "Módulo eliminado exitosamente",
+  })
 }

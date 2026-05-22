@@ -46,19 +46,24 @@ definitions:
     type: object
   dto.ItemCreateRequest:
     properties:
-      name:
-        description: |-
-          ✅ Validación simple: required + longitud
-          Si necesitas formato slug estricto, valida manualmente en el handler
+      code:
         example: crear_usuario
         maxLength: 50
         minLength: 3
         type: string
+      name:
+        example: Crear Usuario
+        maxLength: 50
+        minLength: 3
+        type: string
     required:
+    - code
     - name
     type: object
   dto.ItemResponse:
     properties:
+      code:
+        type: string
       id:
         type: integer
       name:
@@ -66,12 +71,18 @@ definitions:
     type: object
   dto.ItemUpdateRequest:
     properties:
-      name:
+      code:
         example: actualizar_usuario
         maxLength: 50
         minLength: 3
         type: string
+      name:
+        example: Actualizar Usuario
+        maxLength: 50
+        minLength: 3
+        type: string
     required:
+    - code
     - name
     type: object
   dto.LoginRequest:
@@ -217,12 +228,32 @@ definitions:
       message:
         type: string
     type: object
+  dto.StateCreateRequest:
+    properties:
+      name:
+        example: Activo
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
+    type: object
   dto.StateResponse:
     properties:
       id:
         type: integer
       name:
         type: string
+    type: object
+  dto.StateUpdateRequest:
+    properties:
+      name:
+        example: Activo
+        maxLength: 100
+        minLength: 3
+        type: string
+    required:
+    - name
     type: object
   dto.UserCreateRequest:
     properties:
@@ -249,7 +280,6 @@ definitions:
         example: 1
         type: integer
       state:
-        description: ← *int para distinguir "no enviado" de "0"
         enum:
         - 0
         - 1
@@ -260,15 +290,31 @@ definitions:
     - name
     - password
     type: object
+  dto.UserModuleResponse:
+    properties:
+      items:
+        description: ← Items con code incluido
+        items:
+          $ref: '#/definitions/dto.ItemResponse'
+        type: array
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
   dto.UserResponse:
     properties:
       date:
-        description: ← "19/05/2026"
         type: string
       email:
         type: string
       id:
         type: integer
+      modules:
+        description: ← Usa el tipo específico
+        items:
+          $ref: '#/definitions/dto.UserModuleResponse'
+        type: array
       name:
         type: string
       phone:
@@ -278,10 +324,8 @@ definitions:
       profile_id:
         type: integer
       state:
-        description: ← 1=activo, 0=inactivo
         type: integer
       time:
-        description: ← "22:39:17"
         type: string
     type: object
   dto.UserUpdateRequest:
@@ -308,7 +352,6 @@ definitions:
         example: 1
         type: integer
       state:
-        description: ← *int
         enum:
         - 0
         - 1
@@ -353,6 +396,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Iniciar sesión
       tags:
       - Auth
@@ -377,7 +426,8 @@ paths:
       - Auth
   /auth/me:
     get:
-      description: Retorna los datos del usuario actualmente autenticado
+      description: Retorna los datos del usuario actualmente autenticado, incluyendo
+        su perfil, estado y módulos con permisos (items) asignados
       produces:
       - application/json
       responses:
@@ -391,6 +441,14 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
       summary: Obtener usuario autenticado
       tags:
       - Auth
@@ -406,6 +464,12 @@ paths:
             $ref: '#/definitions/dto.RefreshResponse'
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -444,7 +508,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Crea un nuevo item (acción) con nombre único
+      description: Crea un nuevo item (acción) con nombre y código únicos
       parameters:
       - description: Datos del item
         in: body
@@ -522,14 +586,14 @@ paths:
     put:
       consumes:
       - application/json
-      description: Actualiza el nombre de un item existente
+      description: Actualiza el nombre y código de un item existente
       parameters:
       - description: ID del item
         in: path
         name: id
         required: true
         type: integer
-      - description: Nuevo nombre
+      - description: Nuevos datos
         in: body
         name: item
         required: true
@@ -759,6 +823,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/common.PaginatedResponse-dto_ProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Listar perfiles con paginación y búsqueda
       tags:
       - Profiles
@@ -782,6 +858,18 @@ paths:
             $ref: '#/definitions/dto.ProfileResponse'
         "400":
           description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -813,6 +901,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Eliminar perfil
       tags:
       - Profiles
@@ -833,6 +933,12 @@ paths:
             $ref: '#/definitions/dto.ProfileResponse'
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -869,6 +975,18 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Actualizar perfil
       tags:
       - Profiles
@@ -887,10 +1005,17 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/dto.ModuleResponse'
+            type: array
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -920,7 +1045,8 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
         "400":
           description: Bad Request
@@ -930,6 +1056,12 @@ paths:
             type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -958,10 +1090,17 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/dto.ItemResponse'
+            type: array
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -996,8 +1135,7 @@ paths:
         "201":
           description: Created
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/dto.ItemResponse'
         "400":
           description: Bad Request
           schema:
@@ -1012,6 +1150,12 @@ paths:
             type: object
         "409":
           description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -1046,7 +1190,8 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
         "400":
           description: Bad Request
@@ -1056,6 +1201,12 @@ paths:
             type: object
         "404":
           description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -1097,6 +1248,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Eliminar item de un módulo de perfil
       tags:
       - Profile Module Items
@@ -1112,7 +1269,174 @@ paths:
             items:
               $ref: '#/definitions/dto.StateResponse'
             type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       summary: Listar estados
+      tags:
+      - States
+    post:
+      consumes:
+      - application/json
+      description: Crea un nuevo estado con nombre único
+      parameters:
+      - description: Datos del estado
+        in: body
+        name: state
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StateCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.StateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo estado
+      tags:
+      - States
+  /states/{id}:
+    delete:
+      description: Elimina un estado por su ID (valida dependencias con user_metadata)
+      parameters:
+      - description: ID del estado
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar estado
+      tags:
+      - States
+    get:
+      description: Retorna un estado específico por su ID
+      parameters:
+      - description: ID del estado
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StateResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener estado por ID
+      tags:
+      - States
+    put:
+      consumes:
+      - application/json
+      description: Actualiza el nombre de un estado existente
+      parameters:
+      - description: ID del estado
+        in: path
+        minimum: 1
+        name: id
+        required: true
+        type: integer
+      - description: Nuevo nombre
+        in: body
+        name: state
+        required: true
+        schema:
+          $ref: '#/definitions/dto.StateUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.StateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar estado
       tags:
       - States
   /users:
@@ -1199,10 +1523,8 @@ paths:
     post:
       consumes:
       - application/json
-      - application/json
-      description: |-
-        Crea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional
-        Crea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional
+      description: Crea un usuario con validación de email único, password hasheado
+        con bcrypt, y metadata opcional
       parameters:
       - description: Datos del usuario
         in: body
@@ -1210,14 +1532,7 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/dto.UserCreateRequest'
-      - description: Datos del usuario
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UserCreateRequest'
       produces:
-      - application/json
       - application/json
       responses:
         "201":
@@ -1244,7 +1559,6 @@ paths:
             type: object
       summary: Crear nuevo usuario
       tags:
-      - Users
       - Users
   /users/{id}:
     delete:

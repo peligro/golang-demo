@@ -63,6 +63,15 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -98,7 +107,12 @@ const docTemplate = `{
         },
         "/auth/me": {
             "get": {
-                "description": "Retorna los datos del usuario actualmente autenticado",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Retorna los datos del usuario actualmente autenticado, incluyendo su perfil, estado y módulos con permisos (items) asignados",
                 "produces": [
                     "application/json"
                 ],
@@ -115,6 +129,15 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -144,6 +167,15 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -197,7 +229,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Crea un nuevo item (acción) con nombre único",
+                "description": "Crea un nuevo item (acción) con nombre y código únicos",
                 "consumes": [
                     "application/json"
                 ],
@@ -276,7 +308,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Actualiza el nombre de un item existente",
+                "description": "Actualiza el nombre y código de un item existente",
                 "consumes": [
                     "application/json"
                 ],
@@ -296,7 +328,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Nuevo nombre",
+                        "description": "Nuevos datos",
                         "name": "item",
                         "in": "body",
                         "required": true,
@@ -672,6 +704,24 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/common.PaginatedResponse-dto_ProfileResponse"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
@@ -713,6 +763,24 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -745,6 +813,15 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -799,6 +876,24 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             },
@@ -838,6 +933,24 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -865,12 +978,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.ModuleResponse"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -915,7 +1039,9 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -929,6 +1055,15 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -969,12 +1104,23 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.ItemResponse"
+                            }
                         }
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1026,7 +1172,9 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -1040,6 +1188,15 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1090,8 +1247,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/dto.ItemResponse"
                         }
                     },
                     "400": {
@@ -1114,6 +1270,15 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1175,6 +1340,15 @@ const docTemplate = `{
                                 "type": "string"
                             }
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
                     }
                 }
             }
@@ -1196,6 +1370,256 @@ const docTemplate = `{
                             "type": "array",
                             "items": {
                                 "$ref": "#/definitions/dto.StateResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Crea un nuevo estado con nombre único",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "States"
+                ],
+                "summary": "Crear nuevo estado",
+                "parameters": [
+                    {
+                        "description": "Datos del estado",
+                        "name": "state",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.StateCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/states/{id}": {
+            "get": {
+                "description": "Retorna un estado específico por su ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "States"
+                ],
+                "summary": "Obtener estado por ID",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "ID del estado",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StateResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Actualiza el nombre de un estado existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "States"
+                ],
+                "summary": "Actualizar estado",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "ID del estado",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Nuevo nombre",
+                        "name": "state",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.StateUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Elimina un estado por su ID (valida dependencias con user_metadata)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "States"
+                ],
+                "summary": "Eliminar estado",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "ID del estado",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
                             }
                         }
                     }
@@ -1316,30 +1740,18 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Crea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional\nCrea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional",
+                "description": "Crea un usuario con validación de email único, password hasheado con bcrypt, y metadata opcional",
                 "consumes": [
-                    "application/json",
                     "application/json"
                 ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "Users",
                     "Users"
                 ],
                 "summary": "Crear nuevo usuario",
                 "parameters": [
-                    {
-                        "description": "Datos del usuario",
-                        "name": "user",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UserCreateRequest"
-                        }
-                    },
                     {
                         "description": "Datos del usuario",
                         "name": "user",
@@ -1680,21 +2092,30 @@ const docTemplate = `{
         "dto.ItemCreateRequest": {
             "type": "object",
             "required": [
+                "code",
                 "name"
             ],
             "properties": {
-                "name": {
-                    "description": "✅ Validación simple: required + longitud\nSi necesitas formato slug estricto, valida manualmente en el handler",
+                "code": {
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
                     "example": "crear_usuario"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "Crear Usuario"
                 }
             }
         },
         "dto.ItemResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -1706,14 +2127,21 @@ const docTemplate = `{
         "dto.ItemUpdateRequest": {
             "type": "object",
             "required": [
+                "code",
                 "name"
             ],
             "properties": {
-                "name": {
+                "code": {
                     "type": "string",
                     "maxLength": 50,
                     "minLength": 3,
                     "example": "actualizar_usuario"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "Actualizar Usuario"
                 }
             }
         },
@@ -1923,6 +2351,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.StateCreateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Activo"
+                }
+            }
+        },
         "dto.StateResponse": {
             "type": "object",
             "properties": {
@@ -1931,6 +2373,20 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.StateUpdateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Activo"
                 }
             }
         },
@@ -1970,7 +2426,6 @@ const docTemplate = `{
                     "example": 1
                 },
                 "state": {
-                    "description": "← *int para distinguir \"no enviado\" de \"0\"",
                     "type": "integer",
                     "enum": [
                         0,
@@ -1980,11 +2435,28 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.UserModuleResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "description": "← Items con code incluido",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.ItemResponse"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.UserResponse": {
             "type": "object",
             "properties": {
                 "date": {
-                    "description": "← \"19/05/2026\"",
                     "type": "string"
                 },
                 "email": {
@@ -1992,6 +2464,13 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "modules": {
+                    "description": "← Usa el tipo específico",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserModuleResponse"
+                    }
                 },
                 "name": {
                     "type": "string"
@@ -2006,11 +2485,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "state": {
-                    "description": "← 1=activo, 0=inactivo",
                     "type": "integer"
                 },
                 "time": {
-                    "description": "← \"22:39:17\"",
                     "type": "string"
                 }
             }
@@ -2045,7 +2522,6 @@ const docTemplate = `{
                     "example": 1
                 },
                 "state": {
-                    "description": "← *int",
                     "type": "integer",
                     "enum": [
                         0,

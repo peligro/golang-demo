@@ -1,24 +1,26 @@
 package profile
 
 import (
-	"net/http"
+  "errors"
+  "net/http"
 
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
+  "github.com/gin-gonic/gin"
+  "gorm.io/gorm"
 
-	"github.com/peligro/golang-demo/common"
-	"github.com/peligro/golang-demo/dto"
-	"github.com/peligro/golang-demo/model"
+  "github.com/peligro/golang-demo/common"
+  "github.com/peligro/golang-demo/dto"
 )
 
 // Handler maneja las operaciones HTTP para Profiles
 type Handler struct {
-	db *gorm.DB
+  service *Service
 }
 
 // NewHandler crea una nueva instancia
 func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{db: db}
+  return &Handler{
+    service: NewService(db), // ← Inyectar servicio
+  }
 }
 
 // Index godoc
@@ -33,55 +35,28 @@ func NewHandler(db *gorm.DB) *Handler {
 // @Param sort_by query string false "Campo para ordenar" Enums(id,name,created_at)
 // @Param sort_dir query string false "Dirección" Enums(asc,desc)
 // @Success 200 {object} common.PaginatedResponse[dto.ProfileResponse]
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /profiles [get]
 func (h *Handler) Index(c *gin.Context) {
-	// Parsear parámetros con valores por defecto
-	params := common.DefaultPagination()
-	if err := c.ShouldBindQuery(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "error",
-			"message": "Parámetros de consulta inválidos",
-		})
-		return
-	}
+  params := common.DefaultPagination()
+  if err := c.ShouldBindQuery(&params); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{
+      "status":  "error",
+      "message": "Parámetros de consulta inválidos",
+    })
+    return
+  }
 
-	// Whitelist de campos permitidos
-	searchableFields := []string{"name"}
-	allowedSortFields := []string{"id", "name", "created_at"}
-
-	// Construir query base
-	query := h.db.Model(&model.Profile{})
-
-	// Aplicar búsqueda y ordenamiento
-	query = params.Apply(query, searchableFields, allowedSortFields)
-
-	// Obtener total para metadatos de paginación
-	var total int64
-	h.db.Model(&model.Profile{}).Count(&total)
-
-	// Aplicar paginación y ejecutar
-	offset := (params.Page - 1) * params.PerPage
-	var profiles []model.Profile
-	if err := query.Offset(offset).Limit(params.PerPage).Find(&profiles).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar perfiles",
-		})
-		return
-	}
-
-	// Mapear a DTOs
-	response := make([]dto.ProfileResponse, len(profiles))
-	for i, p := range profiles {
-		response[i] = dto.ProfileResponse{
-			ID:          p.ID,
-			Name:        p.Name,
-			Description: p.Description,
-		}
-	}
-
-	// Retornar respuesta compatible con React PaginationInfo
-	c.JSON(http.StatusOK, common.NewPaginatedResponse(response, int(total), params.Page, params.PerPage))
+  response, err := h.service.ListPaginated(params)
+  if err != nil {
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al consultar perfiles",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, response)
 }
 
 // Show godoc
@@ -92,34 +67,30 @@ func (h *Handler) Index(c *gin.Context) {
 // @Param id path uint true "ID del perfil"
 // @Success 200 {object} dto.ProfileResponse
 // @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /profiles/{id} [get]
 func (h *Handler) Show(c *gin.Context) {
-	id, ok := common.ParseID(c, "id")
-	if !ok {
-		return
-	}
+  id, ok := common.ParseID(c, "id")
+  if !ok {
+    return
+  }
 
-	var profile model.Profile
-	if err := h.db.First(&profile, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  "error",
-				"message": common.ErrNotFound.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar el perfil",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, dto.ProfileResponse{
-		ID:          profile.ID,
-		Name:        profile.Name,
-		Description: profile.Description,
-	})
+  profile, err := h.service.GetByID(uint(id))
+  if err != nil {
+    if errors.Is(err, common.ErrNotFound) {
+      c.JSON(http.StatusNotFound, gin.H{
+        "status":  "error",
+        "message": common.ErrNotFound.Error(),
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al consultar el perfil",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, profile)
 }
 
 // Create godoc
@@ -131,41 +102,32 @@ func (h *Handler) Show(c *gin.Context) {
 // @Param profile body dto.ProfileCreateRequest true "Datos del perfil"
 // @Success 201 {object} dto.ProfileResponse
 // @Failure 400 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /profiles [post]
 func (h *Handler) Create(c *gin.Context) {
-	body, ok := common.BindAndValidate[dto.ProfileCreateRequest](c)
-	if !ok {
-		return
-	}
+  body, ok := common.BindAndValidate[dto.ProfileCreateRequest](c)
+  if !ok {
+    return
+  }
 
-	// Validar que no exista el nombre (case-insensitive)
-	var existing model.Profile
-	if err := h.db.Where("LOWER(name) = LOWER(?)", body.Name).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": common.ErrDuplicate.Error(),
-			"field":   "name",
-		})
-		return
-	}
-
-	newProfile := model.Profile{
-		Name:        body.Name,
-		Description: body.Description,
-	}
-	if err := h.db.Create(&newProfile).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al crear el perfil",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, dto.ProfileResponse{
-		ID:          newProfile.ID,
-		Name:        newProfile.Name,
-		Description: newProfile.Description,
-	})
+  profile, err := h.service.Create(body.Name, body.Description)
+  if err != nil {
+    if err.Error() == "nombre duplicado" {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": common.ErrDuplicate.Error(),
+        "field":   "name",
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al crear el perfil",
+    })
+    return
+  }
+  c.JSON(http.StatusCreated, profile)
 }
 
 // Update godoc
@@ -178,60 +140,44 @@ func (h *Handler) Create(c *gin.Context) {
 // @Param profile body dto.ProfileUpdateRequest true "Nuevos datos"
 // @Success 200 {object} dto.ProfileResponse
 // @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /profiles/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
-	id, ok := common.ParseID(c, "id")
-	if !ok {
-		return
-	}
+  id, ok := common.ParseID(c, "id")
+  if !ok {
+    return
+  }
 
-	body, ok := common.BindAndValidate[dto.ProfileUpdateRequest](c)
-	if !ok {
-		return
-	}
+  body, ok := common.BindAndValidate[dto.ProfileUpdateRequest](c)
+  if !ok {
+    return
+  }
 
-	var profile model.Profile
-	if err := h.db.First(&profile, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  "error",
-				"message": common.ErrNotFound.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar el perfil",
-		})
-		return
-	}
-
-	// Validar nombre único (excluyendo el propio registro)
-	var existing model.Profile
-	if err := h.db.Where("LOWER(name) = LOWER(?) AND id != ?", body.Name, id).First(&existing).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": common.ErrDuplicate.Error(),
-			"field":   "name",
-		})
-		return
-	}
-
-	profile.Name = body.Name
-	profile.Description = body.Description
-	if err := h.db.Save(&profile).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al actualizar el perfil",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, dto.ProfileResponse{
-		ID:          profile.ID,
-		Name:        profile.Name,
-		Description: profile.Description,
-	})
+  profile, err := h.service.Update(uint(id), body.Name, body.Description)
+  if err != nil {
+    if errors.Is(err, common.ErrNotFound) {
+      c.JSON(http.StatusNotFound, gin.H{
+        "status":  "error",
+        "message": common.ErrNotFound.Error(),
+      })
+      return
+    }
+    if err.Error() == "nombre duplicado" {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": common.ErrDuplicate.Error(),
+        "field":   "name",
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al actualizar el perfil",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, profile)
 }
 
 // Delete godoc
@@ -242,50 +188,39 @@ func (h *Handler) Update(c *gin.Context) {
 // @Param id path uint true "ID del perfil"
 // @Success 200 {object} map[string]string
 // @Failure 404 {object} map[string]string
+// @Failure 409 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /profiles/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
-	id, ok := common.ParseID(c, "id")
-	if !ok {
-		return
-	}
+  id, ok := common.ParseID(c, "id")
+  if !ok {
+    return
+  }
 
-	var profile model.Profile
-	if err := h.db.First(&profile, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{
-				"status":  "error",
-				"message": common.ErrNotFound.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al consultar el perfil",
-		})
-		return
-	}
-
-	// 🔒 Validar dependencias: ¿está asignado a algún profile_module?
-	var count int64
-	h.db.Model(&model.ProfileModule{}).Where("profile_id = ?", id).Count(&count)
-	if count > 0 {
-		c.JSON(http.StatusConflict, gin.H{
-			"status":  "error",
-			"message": common.ErrHasDependencies.Error(),
-		})
-		return
-	}
-
-	if err := h.db.Delete(&profile).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status":  "error",
-			"message": "Error al eliminar el perfil",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "ok",
-		"message": "Perfil eliminado exitosamente",
-	})
+  err := h.service.Delete(uint(id))
+  if err != nil {
+    if errors.Is(err, common.ErrNotFound) {
+      c.JSON(http.StatusNotFound, gin.H{
+        "status":  "error",
+        "message": common.ErrNotFound.Error(),
+      })
+      return
+    }
+    if errors.Is(err, common.ErrHasDependencies) {
+      c.JSON(http.StatusConflict, gin.H{
+        "status":  "error",
+        "message": common.ErrHasDependencies.Error(),
+      })
+      return
+    }
+    c.JSON(http.StatusInternalServerError, gin.H{
+      "status":  "error",
+      "message": "Error al eliminar el perfil",
+    })
+    return
+  }
+  c.JSON(http.StatusOK, gin.H{
+    "status":  "ok",
+    "message": "Perfil eliminado exitosamente",
+  })
 }

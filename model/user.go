@@ -12,7 +12,6 @@ type User struct {
 	Email          string         `gorm:"size:255;not null;unique" json:"email"`
 	Password       string         `gorm:"size:255;not null" json:"-"` // Ocultar en JSON
 	RememberToken  string         `gorm:"size:100" json:"-"`
-	Metadata       *UserMetadata  `gorm:"foreignKey:UserID" json:"metadata,omitempty"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
 }
