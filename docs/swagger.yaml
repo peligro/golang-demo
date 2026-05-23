@@ -1,5 +1,23 @@
 basePath: /
 definitions:
+  common.PaginatedResponse-dto_AppMenuResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.AppMenuResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/common.PaginationInfo'
+    type: object
+  common.PaginatedResponse-dto_HomeMenuResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.HomeMenuResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/common.PaginationInfo'
+    type: object
   common.PaginatedResponse-dto_ModuleResponse:
     properties:
       data:
@@ -38,10 +56,167 @@ definitions:
       total:
         type: integer
     type: object
+  dto.AppMenuCreateRequest:
+    properties:
+      icon:
+        example: fa-home
+        maxLength: 200
+        type: string
+      label:
+        example: Inicio
+        maxLength: 200
+        type: string
+      module_id:
+        example: 1
+        type: integer
+      order:
+        example: 1
+        type: integer
+      parent_id:
+        example: 0
+        type: integer
+      title:
+        example: Página principal
+        maxLength: 200
+        type: string
+    required:
+    - label
+    - title
+    type: object
+  dto.AppMenuResponse:
+    properties:
+      created_at:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      label:
+        type: string
+      module_id:
+        type: integer
+      order:
+        type: integer
+      parent_id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.AppMenuUpdateRequest:
+    properties:
+      icon:
+        example: fa-home
+        maxLength: 200
+        type: string
+      label:
+        example: Inicio
+        maxLength: 200
+        type: string
+      module_id:
+        example: 1
+        type: integer
+      order:
+        example: 1
+        type: integer
+      parent_id:
+        example: 0
+        type: integer
+      title:
+        example: Página principal
+        maxLength: 200
+        type: string
+    type: object
   dto.HealthResponse:
     properties:
       status:
         example: UP!!
+        type: string
+    type: object
+  dto.HomeMenuCreateRequest:
+    properties:
+      color:
+        example: '#3b82f6'
+        maxLength: 100
+        type: string
+      description:
+        example: Panel principal de control
+        type: string
+      icon:
+        example: fa-chart-line
+        maxLength: 100
+        type: string
+      module_id:
+        example: 1
+        type: integer
+      order:
+        example: 1
+        type: integer
+      slug:
+        example: /dashboard
+        maxLength: 200
+        type: string
+      title:
+        example: Dashboard
+        maxLength: 200
+        type: string
+    required:
+    - color
+    - description
+    - icon
+    - slug
+    - title
+    type: object
+  dto.HomeMenuResponse:
+    properties:
+      color:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      module_id:
+        type: integer
+      order:
+        type: integer
+      slug:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.HomeMenuUpdateRequest:
+    properties:
+      color:
+        example: '#3b82f6'
+        maxLength: 100
+        type: string
+      description:
+        example: Panel principal de control
+        type: string
+      icon:
+        example: fa-chart-line
+        maxLength: 100
+        type: string
+      module_id:
+        example: 1
+        type: integer
+      order:
+        example: 1
+        type: integer
+      slug:
+        example: /dashboard
+        maxLength: 200
+        type: string
+      title:
+        example: Dashboard
+        maxLength: 200
         type: string
     type: object
   dto.ItemCreateRequest:
@@ -365,6 +540,219 @@ info:
   title: Golang DEMO
   version: "1.0"
 paths:
+  /app-menu:
+    get:
+      description: Retorna menús paginados para el panel de administración
+      parameters:
+      - default: 1
+        description: Página
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Registros por página
+        in: query
+        name: per_page
+        type: integer
+      - description: Término de búsqueda
+        in: query
+        name: search
+        type: string
+      - description: Campo a buscar
+        enum:
+        - label
+        - title
+        in: query
+        name: field
+        type: string
+      - description: Campo para ordenar
+        enum:
+        - id
+        - label
+        - title
+        - order
+        - created_at
+        in: query
+        name: sort_by
+        type: string
+      - description: Dirección
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedResponse-dto_AppMenuResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar menús con paginación
+      tags:
+      - App Menu
+    post:
+      consumes:
+      - application/json
+      description: Crea un menú con validación de padre y módulo
+      parameters:
+      - description: Datos del menú
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AppMenuCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AppMenuResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo menú
+      tags:
+      - App Menu
+  /app-menu-all:
+    get:
+      description: Retorna la lista completa de menús ordenada, ideal para el sidebar
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.AppMenuResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar todos los menús (sin paginación)
+      tags:
+      - App Menu
+  /app-menu/{id}:
+    delete:
+      description: Elimina un menú si no tiene hijos
+      parameters:
+      - description: ID del menú
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar menú
+      tags:
+      - App Menu
+    get:
+      description: Retorna un menú específico
+      parameters:
+      - description: ID del menú
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AppMenuResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener menú por ID
+      tags:
+      - App Menu
+    put:
+      consumes:
+      - application/json
+      description: Actualiza un menú existente
+      parameters:
+      - description: ID del menú
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Nuevos datos
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AppMenuUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AppMenuResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar menú
+      tags:
+      - App Menu
   /auth/login:
     post:
       consumes:
@@ -490,6 +878,214 @@ paths:
       summary: Verifica estado del servidor
       tags:
       - Health
+  /home-menu:
+    get:
+      description: Retorna menús del home paginados para el panel de administración
+      parameters:
+      - default: 1
+        description: Página
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Registros por página
+        in: query
+        name: per_page
+        type: integer
+      - description: Término de búsqueda
+        in: query
+        name: search
+        type: string
+      - description: Campo a buscar
+        enum:
+        - title
+        - description
+        - slug
+        in: query
+        name: field
+        type: string
+      - description: Campo para ordenar
+        enum:
+        - id
+        - title
+        - order
+        - created_at
+        in: query
+        name: sort_by
+        type: string
+      - description: Dirección
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/common.PaginatedResponse-dto_HomeMenuResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar menús del home con paginación
+      tags:
+      - Home Menu
+    post:
+      consumes:
+      - application/json
+      description: Crea un menú del home con validación de módulo
+      parameters:
+      - description: Datos del menú del home
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/dto.HomeMenuCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.HomeMenuResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Crear nuevo menú del home
+      tags:
+      - Home Menu
+  /home-menu-all:
+    get:
+      description: Retorna la lista completa de menús del home ordenada, ideal para
+        mostrar en el dashboard
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.HomeMenuResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Listar todos los menús del home (sin paginación)
+      tags:
+      - Home Menu
+  /home-menu/{id}:
+    delete:
+      description: Elimina un menú del home
+      parameters:
+      - description: ID del menú del home
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Eliminar menú del home
+      tags:
+      - Home Menu
+    get:
+      description: Retorna un menú del home específico
+      parameters:
+      - description: ID del menú del home
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.HomeMenuResponse'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener menú del home por ID
+      tags:
+      - Home Menu
+    put:
+      consumes:
+      - application/json
+      description: Actualiza un menú del home existente
+      parameters:
+      - description: ID del menú del home
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Nuevos datos
+        in: body
+        name: menu
+        required: true
+        schema:
+          $ref: '#/definitions/dto.HomeMenuUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.HomeMenuResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Actualizar menú del home
+      tags:
+      - Home Menu
   /items:
     get:
       description: Retorna todos los items registrados ordenados por ID descendente

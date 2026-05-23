@@ -15,6 +15,324 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/app-menu": {
+            "get": {
+                "description": "Retorna menús paginados para el panel de administración",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "App Menu"
+                ],
+                "summary": "Listar menús con paginación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Registros por página",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Término de búsqueda",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "label",
+                            "title"
+                        ],
+                        "type": "string",
+                        "description": "Campo a buscar",
+                        "name": "field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "id",
+                            "label",
+                            "title",
+                            "order",
+                            "created_at"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Dirección",
+                        "name": "sort_dir",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.PaginatedResponse-dto_AppMenuResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Crea un menú con validación de padre y módulo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "App Menu"
+                ],
+                "summary": "Crear nuevo menú",
+                "parameters": [
+                    {
+                        "description": "Datos del menú",
+                        "name": "menu",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AppMenuCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AppMenuResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/app-menu-all": {
+            "get": {
+                "description": "Retorna la lista completa de menús ordenada, ideal para el sidebar",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "App Menu"
+                ],
+                "summary": "Listar todos los menús (sin paginación)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.AppMenuResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/app-menu/{id}": {
+            "get": {
+                "description": "Retorna un menú específico",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "App Menu"
+                ],
+                "summary": "Obtener menú por ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del menú",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AppMenuResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Actualiza un menú existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "App Menu"
+                ],
+                "summary": "Actualizar menú",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del menú",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Nuevos datos",
+                        "name": "menu",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AppMenuUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AppMenuResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Elimina un menú si no tiene hijos",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "App Menu"
+                ],
+                "summary": "Eliminar menú",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del menú",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Autentica al usuario y crea una sesión con cookie HTTP-only",
@@ -201,6 +519,315 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/dto.HealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/home-menu": {
+            "get": {
+                "description": "Retorna menús del home paginados para el panel de administración",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Menu"
+                ],
+                "summary": "Listar menús del home con paginación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Página",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Registros por página",
+                        "name": "per_page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Término de búsqueda",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "title",
+                            "description",
+                            "slug"
+                        ],
+                        "type": "string",
+                        "description": "Campo a buscar",
+                        "name": "field",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "id",
+                            "title",
+                            "order",
+                            "created_at"
+                        ],
+                        "type": "string",
+                        "description": "Campo para ordenar",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "description": "Dirección",
+                        "name": "sort_dir",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/common.PaginatedResponse-dto_HomeMenuResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Crea un menú del home con validación de módulo",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Menu"
+                ],
+                "summary": "Crear nuevo menú del home",
+                "parameters": [
+                    {
+                        "description": "Datos del menú del home",
+                        "name": "menu",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.HomeMenuCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.HomeMenuResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/home-menu-all": {
+            "get": {
+                "description": "Retorna la lista completa de menús del home ordenada, ideal para mostrar en el dashboard",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Menu"
+                ],
+                "summary": "Listar todos los menús del home (sin paginación)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/dto.HomeMenuResponse"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/home-menu/{id}": {
+            "get": {
+                "description": "Retorna un menú del home específico",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Menu"
+                ],
+                "summary": "Obtener menú del home por ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del menú del home",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.HomeMenuResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Actualiza un menú del home existente",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Menu"
+                ],
+                "summary": "Actualizar menú del home",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del menú del home",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Nuevos datos",
+                        "name": "menu",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.HomeMenuUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.HomeMenuResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Elimina un menú del home",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Home Menu"
+                ],
+                "summary": "Eliminar menú del home",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID del menú del home",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -2021,6 +2648,34 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "common.PaginatedResponse-dto_AppMenuResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.AppMenuResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/common.PaginationInfo"
+                }
+            }
+        },
+        "common.PaginatedResponse-dto_HomeMenuResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.HomeMenuResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/common.PaginationInfo"
+                }
+            }
+        },
         "common.PaginatedResponse-dto_ModuleResponse": {
             "type": "object",
             "properties": {
@@ -2080,12 +2735,228 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AppMenuCreateRequest": {
+            "type": "object",
+            "required": [
+                "label",
+                "title"
+            ],
+            "properties": {
+                "icon": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "fa-home"
+                },
+                "label": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Inicio"
+                },
+                "module_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "parent_id": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Página principal"
+                }
+            }
+        },
+        "dto.AppMenuResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "module_id": {
+                    "type": "integer"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "parent_id": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.AppMenuUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "icon": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "fa-home"
+                },
+                "label": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Inicio"
+                },
+                "module_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "parent_id": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Página principal"
+                }
+            }
+        },
         "dto.HealthResponse": {
             "type": "object",
             "properties": {
                 "status": {
                     "type": "string",
                     "example": "UP!!"
+                }
+            }
+        },
+        "dto.HomeMenuCreateRequest": {
+            "type": "object",
+            "required": [
+                "color",
+                "description",
+                "icon",
+                "slug",
+                "title"
+            ],
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "#3b82f6"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Panel principal de control"
+                },
+                "icon": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "fa-chart-line"
+                },
+                "module_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "/dashboard"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Dashboard"
+                }
+            }
+        },
+        "dto.HomeMenuResponse": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "icon": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "module_id": {
+                    "type": "integer"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.HomeMenuUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "#3b82f6"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Panel principal de control"
+                },
+                "icon": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "fa-chart-line"
+                },
+                "module_id": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "order": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "/dashboard"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "example": "Dashboard"
                 }
             }
         },

@@ -23,6 +23,8 @@ import (
 	"github.com/peligro/golang-demo/routes/item"
 	"github.com/peligro/golang-demo/routes/user"
 	"github.com/peligro/golang-demo/routes/auth"
+	"github.com/peligro/golang-demo/routes/app_menu"
+	"github.com/peligro/golang-demo/routes/home_menu"
 
 	_ "github.com/peligro/golang-demo/docs"
 )
@@ -97,6 +99,12 @@ func SetupRouter() *gin.Engine {
 
 	// 🔐 Auth routes
 	auth.RegisterRoutes(router, db)
+
+	// 📑 App Menu CRUD
+	app_menu.RegisterRoutes(router, db)
+
+	// 🏠 Home Menu CRUD
+	home_menu.RegisterRoutes(router, db)
 
 	if environment == "local" || environment == "staging" {
     // Redirigir /swagger a /swagger/index.html?dark=true
